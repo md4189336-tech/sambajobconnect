@@ -4,7 +4,7 @@ import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { sectors } from "@/data/mock";
 
-export function JobSearchBar({ initial = {} }: { initial?: { q?: string; location?: string; sector?: string } }) {
+export function JobSearchBar({ initial = {} }: { initial?: { q?: string | undefined; location?: string | undefined; sector?: string | undefined } }) {
   const navigate = useNavigate();
   const [q, setQ] = useState(initial.q ?? "");
   const [location, setLocation] = useState(initial.location ?? "");
