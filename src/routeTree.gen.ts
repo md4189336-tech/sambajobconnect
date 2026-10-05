@@ -12,8 +12,11 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as CompaniesRouteImport } from './routes/companies'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as InstitutionsRouteImport } from './routes/institutions'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as RegisterRouteImport } from './routes/register'
 import { Route as CompanyIdRouteImport } from './routes/company.$id'
 import { Route as JobsIndexRouteImport } from './routes/jobs.index'
 import { Route as JobsIdRouteImport } from './routes/jobs.$id'
@@ -33,14 +36,29 @@ const CompaniesRoute = CompaniesRouteImport.update({
   path: '/companies',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const InstitutionsRoute = InstitutionsRouteImport.update({
   id: '/institutions',
   path: '/institutions',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RegisterRoute = RegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CompanyIdRoute = CompanyIdRouteImport.update({
@@ -63,8 +81,11 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/companies': typeof CompaniesRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/institutions': typeof InstitutionsRoute
+  '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
+  '/register': typeof RegisterRoute
   '/company/$id': typeof CompanyIdRoute
   '/jobs/$id': typeof JobsIdRoute
   '/jobs/': typeof JobsIndexRoute
@@ -73,8 +94,11 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/companies': typeof CompaniesRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/institutions': typeof InstitutionsRoute
+  '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
+  '/register': typeof RegisterRoute
   '/company/$id': typeof CompanyIdRoute
   '/jobs/$id': typeof JobsIdRoute
   '/jobs': typeof JobsIndexRoute
@@ -84,8 +108,11 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/companies': typeof CompaniesRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/institutions': typeof InstitutionsRoute
+  '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
+  '/register': typeof RegisterRoute
   '/company/$id': typeof CompanyIdRoute
   '/jobs/$id': typeof JobsIdRoute
   '/jobs/': typeof JobsIndexRoute
@@ -96,8 +123,11 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/companies'
+    | '/forgot-password'
     | '/institutions'
+    | '/login'
     | '/pricing'
+    | '/register'
     | '/company/$id'
     | '/jobs/$id'
     | '/jobs/'
@@ -106,8 +136,11 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/companies'
+    | '/forgot-password'
     | '/institutions'
+    | '/login'
     | '/pricing'
+    | '/register'
     | '/company/$id'
     | '/jobs/$id'
     | '/jobs'
@@ -116,8 +149,11 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/companies'
+    | '/forgot-password'
     | '/institutions'
+    | '/login'
     | '/pricing'
+    | '/register'
     | '/company/$id'
     | '/jobs/$id'
     | '/jobs/'
@@ -127,8 +163,11 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   CompaniesRoute: typeof CompaniesRoute
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   InstitutionsRoute: typeof InstitutionsRoute
+  LoginRoute: typeof LoginRoute
   PricingRoute: typeof PricingRoute
+  RegisterRoute: typeof RegisterRoute
   CompanyIdRoute: typeof CompanyIdRoute
   JobsIdRoute: typeof JobsIdRoute
   JobsIndexRoute: typeof JobsIndexRoute
@@ -157,6 +196,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CompaniesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/institutions': {
       id: '/institutions'
       path: '/institutions'
@@ -164,11 +210,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InstitutionsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pricing': {
       id: '/pricing'
       path: '/pricing'
       fullPath: '/pricing'
       preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/register': {
+      id: '/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof RegisterRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/company/$id': {
@@ -199,8 +259,11 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   CompaniesRoute: CompaniesRoute,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   InstitutionsRoute: InstitutionsRoute,
+  LoginRoute: LoginRoute,
   PricingRoute: PricingRoute,
+  RegisterRoute: RegisterRoute,
   CompanyIdRoute: CompanyIdRoute,
   JobsIdRoute: JobsIdRoute,
   JobsIndexRoute: JobsIndexRoute,
