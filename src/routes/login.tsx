@@ -30,8 +30,8 @@ function Login() {
   return (
     <AuthLayout title="Se connecter" subtitle="Heureux de vous revoir.">
       <form onSubmit={submit} className="space-y-4" noValidate>
-        <Field id="email" label="Email" type="email" autoComplete="email" error={errors.email} />
-        <Field id="password" label="Mot de passe" type="password" autoComplete="current-password" error={errors.password} />
+        <Field id="email" label="Email" type="email" autoComplete="email" error={errors["email"]} />
+        <Field id="password" label="Mot de passe" type="password" autoComplete="current-password" error={errors["password"]} />
         <div className="text-right"><Link to="/forgot-password" className="text-sm font-medium text-accent hover:underline">Mot de passe oublié ?</Link></div>
         <Button type="submit" variant="accent" size="lg" className="w-full">Se connecter</Button>
         <Button type="button" variant="outline" size="lg" className="w-full" onClick={() => toast.info("Connexion Google bientôt disponible")}>Continuer avec Google</Button>

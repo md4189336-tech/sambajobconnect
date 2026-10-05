@@ -55,9 +55,9 @@ function Register() {
             ))}
           </div>
         </fieldset>
-        <Field id="fullName" label={role === "candidate" ? "Nom complet" : "Nom du responsable"} autoComplete="name" error={errors.fullName} />
-        <Field id="email" label="Email" type="email" autoComplete="email" error={errors.email} />
-        <Field id="password" label="Mot de passe" type="password" autoComplete="new-password" error={errors.password} />
+        <Field id="fullName" label={role === "candidate" ? "Nom complet" : "Nom du responsable"} autoComplete="name" error={errors["fullName"]} />
+        <Field id="email" label="Email" type="email" autoComplete="email" error={errors["email"]} />
+        <Field id="password" label="Mot de passe" type="password" autoComplete="new-password" error={errors["password"]} />
         <Button type="submit" variant="accent" size="lg" className="w-full">Créer mon compte</Button>
       </form>
       <p className="mt-6 text-center text-sm text-muted-foreground">Déjà inscrit ? <Link to="/login" className="font-semibold text-accent hover:underline">Se connecter</Link></p>
