@@ -8,3 +8,4 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+- User roles live in a separate user_roles table filled by a signup trigger; profiles.role is a read-only mirror (column not client-updatable) to prevent privilege escalation.
