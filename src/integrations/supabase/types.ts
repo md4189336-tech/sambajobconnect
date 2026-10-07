@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      jobs: {
+        Row: {
+          company_name: string
+          created_at: string
+          description: string
+          id: string
+          location: string
+          recruiter_id: string
+          sector: string
+          title: string
+        }
+        Insert: {
+          company_name?: string
+          created_at?: string
+          description?: string
+          id?: string
+          location?: string
+          recruiter_id: string
+          sector?: string
+          title: string
+        }
+        Update: {
+          company_name?: string
+          created_at?: string
+          description?: string
+          id?: string
+          location?: string
+          recruiter_id?: string
+          sector?: string
+          title?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
