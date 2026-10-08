@@ -18,6 +18,7 @@ import { Route as InstitutionsRouteImport } from './routes/institutions'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedCandidateRouteImport } from './routes/_authenticated/candidate'
 import { Route as AuthenticatedRecruiterRouteImport } from './routes/_authenticated/recruiter'
 import { Route as CompanyIdRouteImport } from './routes/company.$id'
@@ -68,6 +69,11 @@ const RegisterRoute = RegisterRouteImport.update({
   path: '/register',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedCandidateRoute = AuthenticatedCandidateRouteImport.update({
   id: '/candidate',
   path: '/candidate',
@@ -103,6 +109,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
   '/register': typeof RegisterRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/candidate': typeof AuthenticatedCandidateRoute
   '/recruiter': typeof AuthenticatedRecruiterRoute
   '/company/$id': typeof CompanyIdRoute
@@ -118,6 +125,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
   '/register': typeof RegisterRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/candidate': typeof AuthenticatedCandidateRoute
   '/recruiter': typeof AuthenticatedRecruiterRoute
   '/company/$id': typeof CompanyIdRoute
@@ -135,6 +143,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
   '/register': typeof RegisterRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/candidate': typeof AuthenticatedCandidateRoute
   '/_authenticated/recruiter': typeof AuthenticatedRecruiterRoute
   '/company/$id': typeof CompanyIdRoute
@@ -152,6 +161,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/pricing'
     | '/register'
+    | '/admin'
     | '/candidate'
     | '/recruiter'
     | '/company/$id'
@@ -167,6 +177,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/pricing'
     | '/register'
+    | '/admin'
     | '/candidate'
     | '/recruiter'
     | '/company/$id'
@@ -183,6 +194,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/pricing'
     | '/register'
+    | '/_authenticated/admin'
     | '/_authenticated/candidate'
     | '/_authenticated/recruiter'
     | '/company/$id'
@@ -270,6 +282,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RegisterRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/candidate': {
       id: '/_authenticated/candidate'
       path: '/candidate'
@@ -309,11 +328,13 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedCandidateRoute: typeof AuthenticatedCandidateRoute
   AuthenticatedRecruiterRoute: typeof AuthenticatedRecruiterRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedCandidateRoute: AuthenticatedCandidateRoute,
   AuthenticatedRecruiterRoute: AuthenticatedRecruiterRoute,
 }
