@@ -47,6 +47,39 @@ export type Database = {
         }
         Relationships: []
       }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          method: string
+          plan: string
+          status: string
+          user_id: string
+          validated_at: string | null
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          id?: string
+          method?: string
+          plan?: string
+          status?: string
+          user_id: string
+          validated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          method?: string
+          plan?: string
+          status?: string
+          user_id?: string
+          validated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -54,6 +87,7 @@ export type Database = {
           full_name: string
           id: string
           role: Database["public"]["Enums"]["app_role"]
+          suspended: boolean
         }
         Insert: {
           created_at?: string
@@ -61,6 +95,7 @@ export type Database = {
           full_name?: string
           id: string
           role?: Database["public"]["Enums"]["app_role"]
+          suspended?: boolean
         }
         Update: {
           created_at?: string
@@ -68,6 +103,7 @@ export type Database = {
           full_name?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          suspended?: boolean
         }
         Relationships: []
       }
@@ -94,6 +130,37 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_list_resumes: {
+        Args: never
+        Returns: {
+          created_at: string
+          mimetype: string
+          owner_id: string
+          path: string
+          size: number
+        }[]
+      }
+      admin_set_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _target: string
+        }
+        Returns: undefined
+      }
+      admin_set_suspended: {
+        Args: { _suspended: boolean; _target: string }
+        Returns: undefined
+      }
+      admin_stats: { Args: never; Returns: Json }
+      admin_validate_payment: {
+        Args: {
+          _amount: number
+          _method: string
+          _plan: string
+          _target: string
+        }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

@@ -1,4 +1,6 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { supabase } from "@/integrations/supabase/client";
+import { roleHome } from "@/lib/role-home";
 import { useState, type FormEvent } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -20,12 +22,27 @@ export const Route = createFileRoute("/login")({
 
 function Login() {
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const submit = (e: FormEvent<HTMLFormElement>) => {
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const r = schema.safeParse(Object.fromEntries(new FormData(e.currentTarget)));
     if (!r.success) { setErrors(Object.fromEntries(r.error.issues.map((i) => [i.path[0], i.message]))); return; }
     setErrors({});
-    toast.info("La connexion sera activée à la prochaine étape.");
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email: r.data.email, password: r.data.password });
+      if (error || !data.user) { toast.error("Email ou mot de passe incorrect."); return; }
+      const { data: profile } = await supabase.from("profiles").select("role, suspended").eq("id", data.user.id).single();
+      if (profile?.suspended) {
+        await supabase.auth.signOut();
+        toast.error("Votre compte est suspendu. Contactez le support.");
+        return;
+      }
+      const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: data.user.id, _role: "admin" });
+      toast.success("Connexion réussie");
+      navigate({ to: roleHome(isAdmin ? "admin" : profile?.role), replace: true });
+    } finally { setLoading(false); }
   };
   return (
     <AuthLayout title="Se connecter" subtitle="Heureux de vous revoir.">
@@ -33,7 +50,7 @@ function Login() {
         <Field id="email" label="Email" type="email" autoComplete="email" error={errors["email"]} />
         <Field id="password" label="Mot de passe" type="password" autoComplete="current-password" error={errors["password"]} />
         <div className="text-right"><Link to="/forgot-password" className="text-sm font-medium text-accent hover:underline">Mot de passe oublié ?</Link></div>
-        <Button type="submit" variant="accent" size="lg" className="w-full">Se connecter</Button>
+        <Button type="submit" variant="accent" size="lg" className="w-full" disabled={loading}>{loading ? "Connexion…" : "Se connecter"}</Button>
         <Button type="button" variant="outline" size="lg" className="w-full" onClick={() => toast.info("Connexion Google bientôt disponible")}>Continuer avec Google</Button>
       </form>
       <p className="mt-6 text-center text-sm text-muted-foreground">Pas encore de compte ? <Link to="/register" className="font-semibold text-accent hover:underline">Créer un compte</Link></p>
