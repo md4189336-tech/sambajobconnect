@@ -14,35 +14,118 @@ export type Database = {
   }
   public: {
     Tables: {
+      candidate_profiles: {
+        Row: {
+          bio: string
+          display_name: string
+          experience: string
+          headline: string
+          is_visible: boolean
+          job_title: string
+          location: string
+          resume_path: string | null
+          sector: string
+          skills: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bio?: string
+          display_name?: string
+          experience?: string
+          headline?: string
+          is_visible?: boolean
+          job_title?: string
+          location?: string
+          resume_path?: string | null
+          sector?: string
+          skills?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bio?: string
+          display_name?: string
+          experience?: string
+          headline?: string
+          is_visible?: boolean
+          job_title?: string
+          location?: string
+          resume_path?: string | null
+          sector?: string
+          skills?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      job_titles: {
+        Row: {
+          id: string
+          name: string
+          sector_slug: string
+          sort_order: number
+        }
+        Insert: {
+          id?: string
+          name: string
+          sector_slug: string
+          sort_order?: number
+        }
+        Update: {
+          id?: string
+          name?: string
+          sector_slug?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_titles_sector_slug_fkey"
+            columns: ["sector_slug"]
+            isOneToOne: false
+            referencedRelation: "sectors"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
       jobs: {
         Row: {
           company_name: string
+          contract: string
           created_at: string
           description: string
           id: string
+          job_title: string
           location: string
           recruiter_id: string
           sector: string
+          status: string
           title: string
         }
         Insert: {
           company_name?: string
+          contract?: string
           created_at?: string
           description?: string
           id?: string
+          job_title?: string
           location?: string
           recruiter_id: string
           sector?: string
+          status?: string
           title: string
         }
         Update: {
           company_name?: string
+          contract?: string
           created_at?: string
           description?: string
           id?: string
+          job_title?: string
           location?: string
           recruiter_id?: string
           sector?: string
+          status?: string
           title?: string
         }
         Relationships: []
@@ -104,6 +187,30 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           suspended?: boolean
+        }
+        Relationships: []
+      }
+      sectors: {
+        Row: {
+          description: string
+          icon: string
+          name: string
+          slug: string
+          sort_order: number
+        }
+        Insert: {
+          description?: string
+          icon?: string
+          name: string
+          slug: string
+          sort_order?: number
+        }
+        Update: {
+          description?: string
+          icon?: string
+          name?: string
+          slug?: string
+          sort_order?: number
         }
         Relationships: []
       }

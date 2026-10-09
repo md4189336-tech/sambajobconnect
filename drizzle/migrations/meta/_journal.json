@@ -8,6 +8,13 @@
       "when": 1791451899715,
       "tag": "0000_admin_dashboard",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791533713185,
+      "tag": "0001_sectors_jobtitles_candidate_profiles",
+      "breakpoints": true
     }
   ]
 }
