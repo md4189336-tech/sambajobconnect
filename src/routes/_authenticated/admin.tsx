@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Ban, CheckCircle2, CreditCard, Download, Eye, FileText, LogOut, RefreshCw, Search, ShieldCheck, UserCheck, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { roleHome, type AppRole } from "@/lib/role-home";
+import { type AppRole } from "@/lib/role-home";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -27,10 +27,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
   beforeLoad: async ({ context }) => {
     const user = (context as { user: { id: string } }).user;
     const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
-    if (!isAdmin) {
-      const { data: p } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-      throw redirect({ to: roleHome(p?.role as AppRole | undefined) });
-    }
+    if (!isAdmin) throw redirect({ to: "/login" });
   },
   component: AdminPage,
 });
