@@ -20,7 +20,8 @@ export const Route = createFileRoute("/about")({
           ))}
         </div>
         <h2 className="mt-10 text-xl font-bold text-primary">Contact</h2>
-        <p className="mt-2 text-sm text-muted-foreground">Dakar, Sénégal — les coordonnées complètes seront bientôt publiées.</p>
+        <p className="mt-2 text-sm text-muted-foreground"><a href="tel:+221773806886">+221 77 380 68 86</a> / <a href="tel:+242065707472">+242 06 570 74 72</a></p>
+        <a className="mt-2 block break-all text-sm text-accent" href="mailto:managementaziz221@gmail.com">managementaziz221@gmail.com</a>
       </div>
     </PageShell>
   ),

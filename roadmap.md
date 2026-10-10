@@ -1,5 +1,11 @@
 # Samba Job Connect — Roadmap
 
+## Current UI finalization
+- [ ] Dynamic database sector / métier selectors on post-job, profile and jobs
+- [ ] Eight sector cards on home
+- [ ] Candidate private CV upload and admin document visibility
+- [ ] Contact page and official footer contacts
+
 - [x] P1 Design system, accueil, emplois (recherche + filtres), détail offre, entreprises, formations, tarifs, à propos
 - [x] P1 Écrans connexion / inscription (choix du rôle) / mot de passe oublié — UI + validation
 - [x] P1 Inscription réelle (rôle, profil, redirection)

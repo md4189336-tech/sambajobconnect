@@ -7,14 +7,20 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/s
 import { PageShell } from "@/components/site/PageShell";
 import { JobSearchBar } from "@/components/site/JobSearchBar";
 import { JobCard } from "@/components/site/JobCard";
-import { contractTypes, experienceLevels, getCompany, jobs, locations, sectors } from "@/data/mock";
+import { contractTypes, experienceLevels, getCompany, jobs, locations } from "@/data/mock";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { catalogOptions } from "@/lib/catalog";
+import { DatabaseJobCard } from "@/components/site/DatabaseJobCard";
 
 const searchSchema = z.object({
-  q: z.string().optional(), location: z.string().optional(), sector: z.string().optional(),
+  q: z.string().optional(), location: z.string().optional(), sector: z.string().optional(), job_title: z.string().optional(),
 });
 
 export const Route = createFileRoute("/jobs/")({
   validateSearch: searchSchema,
+  loader: ({ context }) => context.queryClient.ensureQueryData(catalogOptions),
+  errorComponent: () => <PageShell><p role="alert" className="p-10 text-center">Impossible de charger les offres. Actualisez la page.</p></PageShell>,
+  notFoundComponent: () => <p>Offres introuvables.</p>,
   head: () => ({
     meta: [
       { title: "Offres d'emploi au Sénégal — Samba Job Connect" },
@@ -31,6 +37,8 @@ const emptyFilters: Filters = { contracts: [], experience: [], remote: false, mi
 const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "");
 
 function JobsPage() {
+  const { data: catalog } = useSuspenseQuery(catalogOptions);
+  const sectors = catalog.sectors;
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/jobs/" });
   const [filters, setFilters] = useState<Filters>(emptyFilters);
@@ -38,10 +46,12 @@ function JobsPage() {
 
   const results = useMemo(() => {
     const list = jobs.filter((j) => {
-      const c = getCompany(j.companyId)!;
+      const c = getCompany(j.companyId);
+      if (!c) return false;
       if (search.q && !norm(`${j.title} ${c.name} ${j.skills.join(" ")}`).includes(norm(search.q))) return false;
       if (search.location && !norm(j.location).includes(norm(search.location))) return false;
       if (search.sector && j.sector !== search.sector) return false;
+      if (search.job_title && j.jobTitle !== search.job_title) return false;
       if (filters.contracts.length && !filters.contracts.includes(j.contract)) return false;
       if (filters.experience.length && !filters.experience.includes(j.experience)) return false;
       if (filters.remote && !j.remote) return false;
@@ -54,16 +64,34 @@ function JobsPage() {
     return list;
   }, [search, filters, sort]);
 
+  const databaseResults = catalog.jobs.filter((j) => {
+    if (search.q && !norm(`${j.title} ${j.company_name} ${j.description} ${j.job_title}`).includes(norm(search.q))) return false;
+    if (search.location && !norm(j.location).includes(norm(search.location))) return false;
+    if (search.sector && j.sector !== search.sector) return false;
+    if (search.job_title && j.job_title !== search.job_title) return false;
+    if (filters.contracts.length && !filters.contracts.includes(j.contract)) return false;
+    if (filters.experience.length || filters.remote || filters.minSalary) return false;
+    if (filters.maxDays && (Date.now() - Date.parse(j.created_at)) / 86400000 > filters.maxDays) return false;
+    return true;
+  });
+  const total = results.length + databaseResults.length;
+
   const toggle = (key: "contracts" | "experience", v: string) =>
     setFilters((f) => ({ ...f, [key]: f[key].includes(v) ? f[key].filter((x) => x !== v) : [...f[key], v] }));
 
   const panel = (
     <div className="space-y-6">
       <FilterGroup label="Secteur">
-        <select value={search.sector ?? ""} onChange={(e) => navigate({ search: (p) => ({ ...p, sector: e.target.value || undefined }) })}
+        <select value={search.sector ?? ""} onChange={(e) => navigate({ search: (p) => ({ ...p, sector: e.target.value || undefined, job_title: undefined }) })}
           className="h-11 w-full rounded-md border bg-card px-3 text-sm" aria-label="Secteur">
           <option value="">Tous les secteurs</option>
           {sectors.map((s) => <option key={s.slug} value={s.slug}>{s.name}</option>)}
+        </select>
+      </FilterGroup>
+      <FilterGroup label="Métier">
+        <select value={search.job_title ?? ""} disabled={!search.sector} onChange={(e) => navigate({ search: (p) => ({ ...p, job_title: e.target.value || undefined }) })} className="h-11 w-full rounded-md border bg-card px-3 text-sm disabled:opacity-60" aria-label="Métier">
+          <option value="">Tous les métiers</option>
+          {catalog.titles.filter((t) => t.sector_slug === search.sector).map((t) => <option key={t.id} value={t.name}>{t.name}</option>)}
         </select>
       </FilterGroup>
       <FilterGroup label="Localisation">
@@ -106,7 +134,7 @@ function JobsPage() {
         <aside className="hidden lg:block" aria-label="Filtres">{panel}</aside>
         <div>
           <div className="mb-4 flex items-center justify-between gap-2">
-            <p className="text-sm font-semibold" aria-live="polite">{results.length} offre{results.length > 1 ? "s" : ""} trouvée{results.length > 1 ? "s" : ""}</p>
+            <p className="text-sm font-semibold" aria-live="polite">{total} offre{total > 1 ? "s" : ""} trouvée{total > 1 ? "s" : ""}</p>
             <div className="flex items-center gap-2">
               <Sheet>
                 <SheetTrigger asChild><Button variant="outline" className="lg:hidden"><SlidersHorizontal />Filtres</Button></SheetTrigger>
@@ -119,8 +147,8 @@ function JobsPage() {
               </select>
             </div>
           </div>
-          {results.length ? (
-            <div className="grid gap-4 md:grid-cols-2">{results.map((j) => <JobCard key={j.id} job={j} />)}</div>
+          {total ? (
+            <div className="grid gap-4 md:grid-cols-2">{databaseResults.map((j) => <DatabaseJobCard key={j.id} job={j} />)}{results.map((j) => <JobCard key={j.id} job={j} />)}</div>
           ) : (
             <div className="rounded-xl border bg-card p-10 text-center">
               <SearchX className="mx-auto size-10 text-muted-foreground" />
