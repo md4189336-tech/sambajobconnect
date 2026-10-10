@@ -2,9 +2,11 @@ import { useNavigate } from "@tanstack/react-router";
 import { Search, MapPin, Layers } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
-import { sectors } from "@/data/mock";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { catalogOptions } from "@/lib/catalog";
 
 export function JobSearchBar({ initial = {} }: { initial?: { q?: string | undefined; location?: string | undefined; sector?: string | undefined } }) {
+  const { data: { sectors } } = useSuspenseQuery(catalogOptions);
   const navigate = useNavigate();
   const [q, setQ] = useState(initial.q ?? "");
   const [location, setLocation] = useState(initial.location ?? "");
