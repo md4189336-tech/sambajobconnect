@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
-export function ResumeUpload({ userId, resumePath }: { userId: string; resumePath?: string | null }) {
+export function ResumeUpload({ userId, resumePath }: { userId: string; resumePath?: string | null | undefined }) {
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const qc = useQueryClient();
