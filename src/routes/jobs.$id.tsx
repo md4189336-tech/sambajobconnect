@@ -7,16 +7,25 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from "@/components/ui/textarea";
 import { PageShell } from "@/components/site/PageShell";
 import { CompanyLogo, JobCard } from "@/components/site/JobCard";
-import { formatPosted, formatSalary, getCompany, getJob, jobs, sectorName } from "@/data/mock";
+import { formatPosted, formatSalary, getCompany, getJob, jobs, sectorName, type Job, type Company } from "@/data/mock";
+import { catalogOptions } from "@/lib/catalog";
+import { pageMeta } from "@/lib/page-meta";
 
 export const Route = createFileRoute("/jobs/$id")({
-  loader: ({ params }) => {
+  loader: async ({ params, context }) => {
+    const catalog = await context.queryClient.ensureQueryData(catalogOptions);
+    const databaseJob = catalog.jobs.find((j) => j.id === params.id);
+    if (databaseJob) return { databaseJob, job: null, company: null };
     const job = getJob(params.id);
     if (!job) throw notFound();
-    return { job, company: getCompany(job.companyId)! };
+    const company = getCompany(job.companyId);
+    if (!company) throw notFound();
+    return { job, company, databaseJob: null };
   },
   head: ({ loaderData }) => {
     if (!loaderData) return { meta: [{ title: "Offre introuvable — Samba Job Connect" }, { name: "robots", content: "noindex" }] };
+    if (loaderData.databaseJob) return pageMeta(`${loaderData.databaseJob.title} · ${loaderData.databaseJob.company_name}`, `${loaderData.databaseJob.contract} à ${loaderData.databaseJob.location}. ${loaderData.databaseJob.description.slice(0, 160)}`);
+    if (!loaderData.job || !loaderData.company) return pageMeta("Offre indisponible", "Cette offre n'est pas disponible.");
     const t = `${loaderData.job.title} — ${loaderData.company.name} | Samba Job Connect`;
     const d = `${loaderData.job.contract} à ${loaderData.job.location}. ${formatSalary(loaderData.job.salaryMin, loaderData.job.salaryMax)}. Postulez sur Samba Job Connect.`;
     return { meta: [{ title: t }, { name: "description", content: d }, { property: "og:title", content: t }, { property: "og:description", content: d }] };
@@ -30,7 +39,13 @@ export const Route = createFileRoute("/jobs/$id")({
 });
 
 function JobDetail() {
-  const { job, company } = Route.useLoaderData();
+  const { job, company, databaseJob } = Route.useLoaderData();
+  if (databaseJob) return <PageShell><article className="mx-auto max-w-4xl px-4 py-10"><p className="text-sm font-semibold text-accent">{databaseJob.company_name}</p><h1 className="mt-3 text-3xl font-bold text-primary">{databaseJob.title}</h1><div className="mt-5 flex flex-wrap gap-5 text-sm"><span>{databaseJob.location}</span><span>{databaseJob.contract}</span><span>{databaseJob.job_title}</span></div><h2 className="mt-10 text-xl font-bold text-primary">Description du poste</h2><p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed">{databaseJob.description}</p><Button asChild variant="outline" className="mt-8"><Link to="/jobs">Toutes les offres</Link></Button></article></PageShell>;
+  if (!job || !company) return null;
+  return <DemoJobDetail job={job} company={company} />;
+}
+
+function DemoJobDetail({ job, company }: { job: Job; company: Company }) {
   const [saved, setSaved] = useState(false);
   const [applyOpen, setApplyOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);

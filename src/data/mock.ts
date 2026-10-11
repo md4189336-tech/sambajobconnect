@@ -1,22 +1,7 @@
 // Mock data layer — shapes mirror the planned database tables so it can be swapped later.
-import {
-  Hotel, HardHat, Laptop, Sprout, ShoppingCart, Landmark, HeartPulse, Truck, Zap, GraduationCap,
-  type LucideIcon,
-} from "lucide-react";
-
-export type Sector = { id: string; name: string; slug: string; icon: LucideIcon };
-export const sectors: Sector[] = [
-  { id: "1", name: "Hôtellerie & Tourisme", slug: "hotellerie", icon: Hotel },
-  { id: "2", name: "BTP & Construction", slug: "btp", icon: HardHat },
-  { id: "3", name: "TIC & Numérique", slug: "tic", icon: Laptop },
-  { id: "4", name: "Agriculture", slug: "agriculture", icon: Sprout },
-  { id: "5", name: "Commerce & Distribution", slug: "commerce", icon: ShoppingCart },
-  { id: "6", name: "Banque & Finance", slug: "finance", icon: Landmark },
-  { id: "7", name: "Santé", slug: "sante", icon: HeartPulse },
-  { id: "8", name: "Transport & Logistique", slug: "transport", icon: Truck },
-  { id: "9", name: "Énergie", slug: "energie", icon: Zap },
-  { id: "10", name: "Éducation & Formation", slug: "education", icon: GraduationCap },
-];
+import { sectors } from "./sectors";
+export { sectors } from "./sectors";
+export type { Sector } from "./sectors";
 
 export const locations = ["Dakar", "Thiès", "Saint-Louis", "Kolda", "Ziguinchor", "Kaolack", "Touba"];
 export const contractTypes = ["CDI", "CDD", "Stage", "Freelance", "Alternance", "Mission"] as const;
@@ -41,6 +26,7 @@ export const companies: Company[] = [
 ];
 
 export type Job = {
+  jobTitle?: string;
   id: string; title: string; companyId: string; location: string; contract: ContractType;
   salaryMin: number; salaryMax: number; sector: string; experience: (typeof experienceLevels)[number];
   remote: boolean; postedDaysAgo: number; skills: string[]; description: string;
@@ -56,7 +42,7 @@ const j = (o: Partial<Job> & Pick<Job, "id" | "title" | "companyId" | "location"
   ...o,
 });
 
-export const jobs: Job[] = [
+const demoJobs: Job[] = [
   j({ id: "1", title: "Développeur Full Stack", companyId: "tech-africa", location: "Dakar", contract: "CDI", salaryMin: 400000, salaryMax: 650000, sector: "tic", skills: ["React", "Node.js", "Supabase"], remote: true, postedDaysAgo: 0, experience: "3-5 ans",
     missions: ["Développer des applications web React et Node.js", "Concevoir des API et bases de données", "Participer aux revues de code"],
     profile: ["Bac+3 minimum en informatique", "3 ans d'expérience en développement web", "Maîtrise de Git et TypeScript"] }),
@@ -72,6 +58,17 @@ export const jobs: Job[] = [
   j({ id: "11", title: "Chef de rang", companyId: "teranga-hospitality", location: "Kaolack", contract: "Alternance", salaryMin: 120000, salaryMax: 160000, sector: "hotellerie", skills: ["Service", "Œnologie", "Anglais"], postedDaysAgo: 10, experience: "Débutant" }),
   j({ id: "12", title: "Ingénieur électricien", companyId: "africa-construction", location: "Dakar", contract: "CDI", salaryMin: 600000, salaryMax: 900000, sector: "energie", skills: ["Solaire", "Haute tension", "Normes NF C"], postedDaysAgo: 12, experience: "5 ans +" }),
 ];
+
+export const jobs: Job[] = demoJobs.map((job) => {
+  const titleMap: Record<string, [string, string]> = {
+    "1": ["informatique", "Développeur web"], "2": ["informatique", "Administrateur réseau"],
+    "3": ["commerce", "Responsable commercial"], "4": ["finance", "Comptable"],
+    "7": ["hotellerie", "Réceptionniste"], "8": ["marketing", "Community manager"],
+    "10": ["marketing", "Assistant marketing"], "11": ["restauration", "Serveur"],
+  };
+  const mapped = titleMap[job.id];
+  return mapped ? { ...job, sector: mapped[0], jobTitle: mapped[1] } : job;
+});
 
 export const getCompany = (id: string) => companies.find((c) => c.id === id);
 export const getJob = (id: string) => jobs.find((x) => x.id === id);

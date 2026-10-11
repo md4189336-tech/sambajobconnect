@@ -4,12 +4,19 @@ import { Button } from "@/components/ui/button";
 import { PageShell } from "@/components/site/PageShell";
 import { JobSearchBar } from "@/components/site/JobSearchBar";
 import { JobCard } from "@/components/site/JobCard";
-import { jobs, platformStats, sectors } from "@/data/mock";
+import { jobs, platformStats } from "@/data/mock";
+import { sectors as sectorIcons } from "@/data/sectors";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { catalogOptions } from "@/lib/catalog";
+import { DatabaseJobCard } from "@/components/site/DatabaseJobCard";
 
 const title = "Samba Job Connect — Trouvez votre emploi au Sénégal et en Afrique";
 const description = "Trouvez des emplois, stages et opportunités professionnelles au Sénégal et en Afrique avec Samba Job Connect.";
 
 export const Route = createFileRoute("/")({
+  loader: ({ context }) => context.queryClient.ensureQueryData(catalogOptions),
+  errorComponent: () => <PageShell><p role="alert" className="p-10 text-center">Impossible de charger les opportunités. Actualisez la page.</p></PageShell>,
+  notFoundComponent: () => <p>Page introuvable.</p>,
   head: () => ({
     meta: [
       { title }, { name: "description", content: description },
@@ -20,6 +27,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
+  const { data: catalog } = useSuspenseQuery(catalogOptions);
   return (
     <PageShell>
       <section className="border-b bg-card">
@@ -51,14 +59,17 @@ function Home() {
 
       <section className="mx-auto max-w-7xl px-4 pb-12 lg:px-8">
         <h2 className="text-2xl font-bold text-primary">Explorez les opportunités par secteur</h2>
-        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          {sectors.map((s) => (
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {catalog.sectors.map((s) => {
+            const Icon = sectorIcons.find((icon) => icon.slug === s.slug)?.icon ?? Building2;
+            return (
             <Link key={s.slug} to="/jobs" search={{ sector: s.slug }}
-              className="group flex min-h-24 flex-col justify-between rounded-xl border bg-card p-4 transition-colors hover:border-accent">
-              <s.icon className="size-6 text-accent" aria-hidden />
+              className="group flex min-h-36 flex-col justify-between rounded-lg border bg-card p-4 transition-colors hover:border-accent">
+              <Icon className="size-7 text-accent" aria-hidden />
               <span className="mt-3 text-sm font-semibold group-hover:text-accent">{s.name}</span>
+              <span className="mt-2 text-xs text-muted-foreground">{catalog.titles.filter((t) => t.sector_slug === s.slug).length} métiers</span>
             </Link>
-          ))}
+          ); })}
         </div>
       </section>
 
@@ -68,7 +79,8 @@ function Home() {
           <Link to="/jobs" className="flex items-center gap-1 text-sm font-semibold text-accent hover:underline">Toutes les offres <ArrowRight className="size-4" /></Link>
         </div>
         <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {jobs.slice(0, 6).map((j) => <JobCard key={j.id} job={j} />)}
+          {catalog.jobs.slice(0, 6).map((j) => <DatabaseJobCard key={j.id} job={j} />)}
+          {jobs.slice(0, Math.max(0, 6 - catalog.jobs.length)).map((j) => <JobCard key={j.id} job={j} />)}
         </div>
       </section>
 
