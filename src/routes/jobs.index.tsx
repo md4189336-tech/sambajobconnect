@@ -1,19 +1,24 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { SlidersHorizontal, SearchX } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { PageShell } from "@/components/site/PageShell";
 import { JobSearchBar } from "@/components/site/JobSearchBar";
-import { JobCard } from "@/components/site/JobCard";
-import { contractTypes, experienceLevels, getCompany, jobs, locations } from "@/data/mock";
+import { contractTypes, countries, experienceLevels, locations } from "@/data/mock";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { catalogOptions } from "@/lib/catalog";
 import { DatabaseJobCard } from "@/components/site/DatabaseJobCard";
+import { publicJobsOptions } from "@/lib/job-search";
 
 const searchSchema = z.object({
-  q: z.string().optional(), location: z.string().optional(), sector: z.string().optional(), job_title: z.string().optional(),
+  q: z.string().optional(), location: z.string().optional(), country: z.string().optional(), sector: z.string().optional(), job_title: z.string().optional(),
+  contract: z.string().optional(), experience: z.string().optional(), degree: z.string().optional(), remote: z.boolean().optional(),
+  min_salary: z.preprocess((v) => v === undefined || v === "" ? undefined : Number(v), z.number().nonnegative().optional()),
+  max_salary: z.preprocess((v) => v === undefined || v === "" ? undefined : Number(v), z.number().nonnegative().optional()),
+  max_days: z.preprocess((v) => v === undefined || v === "" ? undefined : Number(v), z.number().nonnegative().optional()),
 });
 
 export const Route = createFileRoute("/jobs/")({
@@ -32,55 +37,30 @@ export const Route = createFileRoute("/jobs/")({
   component: JobsPage,
 });
 
-type Filters = { contracts: string[]; experience: string[]; remote: boolean; minSalary: number; maxDays: number };
-const emptyFilters: Filters = { contracts: [], experience: [], remote: false, minSalary: 0, maxDays: 0 };
-const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "");
-
 function JobsPage() {
   const { data: catalog } = useSuspenseQuery(catalogOptions);
   const sectors = catalog.sectors;
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/jobs/" });
-  const [filters, setFilters] = useState<Filters>(emptyFilters);
   const [sort, setSort] = useState("recent");
+  const selectedSectorId = sectors.find((sector) => sector.slug === search.sector)?.id;
+  const { data: queriedJobs = [], isPending: jobsPending } = useQuery(publicJobsOptions(
+    { ...search, sort },
+    selectedSectorId && /^[0-9a-f-]{36}$/i.test(selectedSectorId) ? selectedSectorId : undefined,
+  ));
+  const setSearch = (key: keyof typeof search, value: string | number | boolean | undefined) =>
+    navigate({ search: (previous) => ({ ...previous, [key]: value === "" ? undefined : value }) });
 
-  const results = useMemo(() => {
-    const list = jobs.filter((j) => {
-      const c = getCompany(j.companyId);
-      if (!c) return false;
-      if (search.q && !norm(`${j.title} ${c.name} ${j.skills.join(" ")}`).includes(norm(search.q))) return false;
-      if (search.location && !norm(j.location).includes(norm(search.location))) return false;
-      if (search.sector && j.sector !== search.sector) return false;
-      if (search.job_title && j.jobTitle !== search.job_title) return false;
-      if (filters.contracts.length && !filters.contracts.includes(j.contract)) return false;
-      if (filters.experience.length && !filters.experience.includes(j.experience)) return false;
-      if (filters.remote && !j.remote) return false;
-      if (filters.minSalary && j.salaryMax < filters.minSalary) return false;
-      if (filters.maxDays && j.postedDaysAgo > filters.maxDays) return false;
-      return true;
-    });
-    if (sort === "salary") return [...list].sort((a, b) => b.salaryMax - a.salaryMax);
-    if (sort === "recent") return [...list].sort((a, b) => a.postedDaysAgo - b.postedDaysAgo);
-    return list;
-  }, [search, filters, sort]);
-
-  const databaseResults = catalog.jobs.filter((j) => {
-    if (search.q && !norm(`${j.title} ${j.company_name} ${j.description} ${j.job_title}`).includes(norm(search.q))) return false;
-    if (search.location && !norm(j.location).includes(norm(search.location))) return false;
-    if (search.sector && j.sector !== search.sector) return false;
-    if (search.job_title && j.job_title !== search.job_title) return false;
-    if (filters.contracts.length && !filters.contracts.includes(j.contract)) return false;
-    if (filters.experience.length || filters.remote || filters.minSalary) return false;
-    if (filters.maxDays && (Date.now() - Date.parse(j.created_at)) / 86400000 > filters.maxDays) return false;
-    return true;
-  });
-  const total = results.length + databaseResults.length;
-
-  const toggle = (key: "contracts" | "experience", v: string) =>
-    setFilters((f) => ({ ...f, [key]: f[key].includes(v) ? f[key].filter((x) => x !== v) : [...f[key], v] }));
+  const databaseResults = queriedJobs;
+  const total = databaseResults.length;
 
   const panel = (
     <div className="space-y-6">
+      <FilterGroup label="Pays">
+        <select value={search.country ?? ""} onChange={(e) => setSearch("country", e.target.value)} className="h-11 w-full rounded-md border bg-card px-3 text-sm" aria-label="Pays">
+          <option value="">Tous les pays</option>{countries.map((country) => <option key={country}>{country}</option>)}
+        </select>
+      </FilterGroup>
       <FilterGroup label="Secteur">
         <select value={search.sector ?? ""} onChange={(e) => navigate({ search: (p) => ({ ...p, sector: e.target.value || undefined, job_title: undefined }) })}
           className="h-11 w-full rounded-md border bg-card px-3 text-sm" aria-label="Secteur">
@@ -95,30 +75,35 @@ function JobsPage() {
         </select>
       </FilterGroup>
       <FilterGroup label="Localisation">
-        <select value={search.location ?? ""} onChange={(e) => navigate({ search: (p) => ({ ...p, location: e.target.value || undefined }) })}
-          className="h-11 w-full rounded-md border bg-card px-3 text-sm" aria-label="Localisation">
-          <option value="">Toutes les villes</option>
-          {locations.map((l) => <option key={l}>{l}</option>)}
-        </select>
+        <input value={search.location ?? ""} onChange={(e) => setSearch("location", e.target.value)} placeholder="Ville" className="h-11 w-full rounded-md border bg-card px-3 text-sm" aria-label="Ville" list="job-cities" />
+        <datalist id="job-cities">{locations.map((city) => <option key={city} value={city} />)}</datalist>
       </FilterGroup>
       <FilterGroup label="Type de contrat">
-        {contractTypes.map((c) => <Check key={c} label={c} checked={filters.contracts.includes(c)} onChange={() => toggle("contracts", c)} />)}
+        <select value={search.contract ?? ""} onChange={(e) => setSearch("contract", e.target.value)} className="h-11 w-full rounded-md border bg-card px-3 text-sm" aria-label="Type de contrat">
+          <option value="">Tous les contrats</option>{contractTypes.map((contract) => <option key={contract}>{contract}</option>)}
+        </select>
       </FilterGroup>
       <FilterGroup label="Expérience">
-        {experienceLevels.map((c) => <Check key={c} label={c} checked={filters.experience.includes(c)} onChange={() => toggle("experience", c)} />)}
-      </FilterGroup>
-      <FilterGroup label="Salaire minimum">
-        <select value={filters.minSalary} onChange={(e) => setFilters((f) => ({ ...f, minSalary: +e.target.value }))} className="h-11 w-full rounded-md border bg-card px-3 text-sm" aria-label="Salaire minimum">
-          <option value={0}>Indifférent</option><option value={200000}>200 000 FCFA +</option><option value={400000}>400 000 FCFA +</option><option value={600000}>600 000 FCFA +</option>
+        <select value={search.experience ?? ""} onChange={(e) => setSearch("experience", e.target.value)} className="h-11 w-full rounded-md border bg-card px-3 text-sm" aria-label="Niveau d'expérience">
+          <option value="">Tous les niveaux</option>{experienceLevels.map((level) => <option key={level}>{level}</option>)}
         </select>
       </FilterGroup>
+      <FilterGroup label="Salaire mensuel (FCFA)">
+        <select value={search.min_salary ?? ""} onChange={(e) => setSearch("min_salary", e.target.value ? Number(e.target.value) : undefined)} className="h-11 w-full rounded-md border bg-card px-3 text-sm" aria-label="Salaire minimum">
+          <option value="">Sans minimum</option><option value={200000}>200 000 +</option><option value={400000}>400 000 +</option><option value={600000}>600 000 +</option>
+        </select>
+        <select value={search.max_salary ?? ""} onChange={(e) => setSearch("max_salary", e.target.value ? Number(e.target.value) : undefined)} className="mt-2 h-11 w-full rounded-md border bg-card px-3 text-sm" aria-label="Salaire maximum">
+          <option value="">Sans maximum</option><option value={300000}>300 000 max</option><option value={500000}>500 000 max</option><option value={800000}>800 000 max</option>
+        </select>
+      </FilterGroup>
+      <FilterGroup label="Diplôme requis"><input value={search.degree ?? ""} onChange={(e) => setSearch("degree", e.target.value)} placeholder="Ex. Bac+3" className="h-11 w-full rounded-md border bg-card px-3 text-sm" aria-label="Diplôme requis" /></FilterGroup>
       <FilterGroup label="Date de publication">
-        <select value={filters.maxDays} onChange={(e) => setFilters((f) => ({ ...f, maxDays: +e.target.value }))} className="h-11 w-full rounded-md border bg-card px-3 text-sm" aria-label="Date de publication">
-          <option value={0}>Toutes les dates</option><option value={1}>Dernières 24h</option><option value={7}>7 derniers jours</option><option value={30}>30 derniers jours</option>
+        <select value={search.max_days ?? ""} onChange={(e) => setSearch("max_days", e.target.value ? Number(e.target.value) : undefined)} className="h-11 w-full rounded-md border bg-card px-3 text-sm" aria-label="Date de publication">
+          <option value="">Toutes les dates</option><option value={1}>Dernières 24h</option><option value={7}>7 derniers jours</option><option value={30}>30 derniers jours</option>
         </select>
       </FilterGroup>
-      <Check label="Télétravail possible" checked={filters.remote} onChange={() => setFilters((f) => ({ ...f, remote: !f.remote }))} />
-      <Button variant="outline" className="w-full" onClick={() => { setFilters(emptyFilters); navigate({ search: {} }); }}>Réinitialiser</Button>
+      <FilterGroup label="Télétravail"><select value={search.remote === undefined ? "" : String(search.remote)} onChange={(e) => setSearch("remote", e.target.value === "" ? undefined : e.target.value === "true")} className="h-11 w-full rounded-md border bg-card px-3 text-sm" aria-label="Télétravail"><option value="">Indifférent</option><option value="true">Oui</option><option value="false">Non</option></select></FilterGroup>
+      <Button variant="outline" className="w-full" onClick={() => navigate({ search: {} })}>Réinitialiser</Button>
     </div>
   );
 
@@ -134,7 +119,7 @@ function JobsPage() {
         <aside className="hidden lg:block" aria-label="Filtres">{panel}</aside>
         <div>
           <div className="mb-4 flex items-center justify-between gap-2">
-            <p className="text-sm font-semibold" aria-live="polite">{total} offre{total > 1 ? "s" : ""} trouvée{total > 1 ? "s" : ""}</p>
+            <p className="text-sm font-semibold" aria-live="polite">{jobsPending ? "Recherche des offres…" : `${total} offre${total > 1 ? "s" : ""} trouvée${total > 1 ? "s" : ""}`}</p>
             <div className="flex items-center gap-2">
               <Sheet>
                 <SheetTrigger asChild><Button variant="outline" className="lg:hidden"><SlidersHorizontal />Filtres</Button></SheetTrigger>
@@ -147,14 +132,23 @@ function JobsPage() {
               </select>
             </div>
           </div>
-          {total ? (
-            <div className="grid gap-4 md:grid-cols-2">{databaseResults.map((j) => <DatabaseJobCard key={j.id} job={j} />)}{results.map((j) => <JobCard key={j.id} job={j} />)}</div>
+          {jobsPending ? <p role="status" className="rounded-xl border bg-card p-10 text-center text-sm text-muted-foreground">Chargement des offres correspondant à vos filtres…</p> : total ? (
+            <div className="grid gap-4 md:grid-cols-2">{databaseResults.map((j) => <DatabaseJobCard key={j.id} job={{
+              id: j.id,
+              title: j.title,
+              company_name: j.company_name,
+              location: j.city || j.location,
+              contract: j.contract_type || j.contract,
+              job_title: j.job_title,
+              company_id: j.company_id,
+              recruiter_id: j.recruiter_id,
+            }} verified={(j.company_id !== null && catalog.verifiedCompanyIds.includes(j.company_id)) || catalog.verifiedCompanyOwners.includes(j.recruiter_id)} />)}</div>
           ) : (
             <div className="rounded-xl border bg-card p-10 text-center">
               <SearchX className="mx-auto size-10 text-muted-foreground" />
               <p className="mt-3 font-semibold">Aucune offre ne correspond à votre recherche.</p>
               <p className="text-sm text-muted-foreground">Essayez d'élargir vos filtres.</p>
-              <Button variant="accent" className="mt-4" onClick={() => { setFilters(emptyFilters); navigate({ search: {} }); }}>Voir toutes les offres</Button>
+              <Button variant="accent" className="mt-4" onClick={() => navigate({ search: {} })}>Voir toutes les offres</Button>
             </div>
           )}
         </div>
@@ -165,11 +159,4 @@ function JobsPage() {
 
 function FilterGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return <fieldset><legend className="mb-2 text-sm font-semibold">{label}</legend><div className="space-y-1">{children}</div></fieldset>;
-}
-function Check({ label, checked, onChange }: { label: string; checked: boolean; onChange: () => void }) {
-  return (
-    <label className="flex min-h-10 cursor-pointer items-center gap-3 text-sm">
-      <input type="checkbox" checked={checked} onChange={onChange} className="size-4 accent-[var(--accent)]" />{label}
-    </label>
-  );
 }

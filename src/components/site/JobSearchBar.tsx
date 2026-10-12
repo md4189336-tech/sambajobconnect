@@ -4,20 +4,22 @@ import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { catalogOptions } from "@/lib/catalog";
+import { countries } from "@/data/mock";
 
-export function JobSearchBar({ initial = {} }: { initial?: { q?: string | undefined; location?: string | undefined; sector?: string | undefined } }) {
+export function JobSearchBar({ initial = {} }: { initial?: { q?: string | undefined; location?: string | undefined; sector?: string | undefined; country?: string | undefined } }) {
   const { data: { sectors } } = useSuspenseQuery(catalogOptions);
   const navigate = useNavigate();
   const [q, setQ] = useState(initial.q ?? "");
   const [location, setLocation] = useState(initial.location ?? "");
   const [sector, setSector] = useState(initial.sector ?? "");
+  const [country, setCountry] = useState(initial.country ?? "");
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    navigate({ to: "/jobs", search: { q: q || undefined, location: location || undefined, sector: sector || undefined } });
+    navigate({ to: "/jobs", search: { q: q || undefined, location: location || undefined, sector: sector || undefined, country: country || undefined } });
   };
   const field = "flex min-h-12 items-center gap-2 rounded-lg border bg-card px-3 focus-within:border-accent";
   return (
-    <form onSubmit={submit} role="search" className="grid gap-2 rounded-xl border bg-card p-2 shadow-card md:grid-cols-[1.4fr_1fr_1fr_auto]">
+    <form onSubmit={submit} role="search" className="grid gap-2 rounded-xl border bg-card p-2 shadow-card md:grid-cols-[1.4fr_1fr_1fr_0.8fr_auto]">
       <label className={field}>
         <Search className="size-5 shrink-0 text-muted-foreground" aria-hidden />
         <span className="sr-only">Que recherchez-vous ?</span>
@@ -34,6 +36,13 @@ export function JobSearchBar({ initial = {} }: { initial?: { q?: string | undefi
         <select value={sector} onChange={(e) => setSector(e.target.value)} className="w-full bg-transparent text-sm outline-none">
           <option value="">Tous les secteurs</option>
           {sectors.map((s) => <option key={s.slug} value={s.slug}>{s.name}</option>)}
+        </select>
+      </label>
+      <label className={field}>
+        <span className="sr-only">Pays</span>
+        <select value={country} onChange={(e) => setCountry(e.target.value)} className="w-full bg-transparent text-sm outline-none" aria-label="Pays">
+          <option value="">Tous les pays</option>
+          {countries.map((value) => <option key={value}>{value}</option>)}
         </select>
       </label>
       <Button type="submit" variant="accent" size="lg" className="w-full md:w-auto">Rechercher un emploi</Button>

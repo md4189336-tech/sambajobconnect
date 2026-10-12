@@ -4,6 +4,7 @@ export { sectors } from "./sectors";
 export type { Sector } from "./sectors";
 
 export const locations = ["Dakar", "Thiès", "Saint-Louis", "Kolda", "Ziguinchor", "Kaolack", "Touba"];
+export const countries = ["Sénégal", "Côte d'Ivoire", "Mali", "Guinée", "Bénin", "Burkina Faso", "Togo", "Ghana", "Nigeria", "Mauritanie"];
 export const contractTypes = ["CDI", "CDD", "Stage", "Freelance", "Alternance", "Mission"] as const;
 export type ContractType = (typeof contractTypes)[number];
 export const experienceLevels = ["Débutant", "1-3 ans", "3-5 ans", "5 ans +"] as const;
@@ -27,6 +28,7 @@ export const companies: Company[] = [
 
 export type Job = {
   jobTitle?: string;
+  country?: string;
   id: string; title: string; companyId: string; location: string; contract: ContractType;
   salaryMin: number; salaryMax: number; sector: string; experience: (typeof experienceLevels)[number];
   remote: boolean; postedDaysAgo: number; skills: string[]; description: string;

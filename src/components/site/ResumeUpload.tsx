@@ -12,7 +12,7 @@ export function ResumeUpload({ userId, resumePath }: { userId: string; resumePat
   const upload = async (file?: File) => {
     if (!file) return;
     const ext = file.name.split(".").pop()?.toLowerCase();
-    if (!ext || !["pdf", "doc", "docx"].includes(ext)) { toast.error("Choisissez un CV au format PDF, DOC ou DOCX."); return; }
+    if (ext !== "pdf" || (file.type && file.type !== "application/pdf")) { toast.error("Choisissez un CV au format PDF."); return; }
     if (file.size > 10 * 1024 * 1024 || file.size === 0) { toast.error("Le fichier doit contenir entre 1 octet et 10 Mo."); return; }
     setBusy(true);
     const safeName = file.name.normalize("NFD").replace(/[^a-zA-Z0-9._-]/g, "_");
@@ -40,8 +40,8 @@ export function ResumeUpload({ userId, resumePath }: { userId: string; resumePat
   return <section className="border-y py-8">
     <div className="flex items-center gap-3"><FileText className="size-7 text-accent" /><h2 className="text-xl font-bold text-primary">Mon CV</h2></div>
     <p className="mt-3 break-words text-sm text-muted-foreground">{resumePath ? resumePath.split("/").pop()?.replace(/^[a-f0-9-]{36}-/, "") : "Aucun CV importé"}</p>
-    <p className="mt-1 text-xs text-muted-foreground">PDF, DOC ou DOCX · 10 Mo maximum · Document privé</p>
-    <input ref={input} type="file" accept=".pdf,.doc,.docx" aria-label="Choisir un CV" className="sr-only" onChange={(e) => upload(e.target.files?.[0])} />
+    <p className="mt-1 text-xs text-muted-foreground">PDF · 10 Mo maximum · Document privé</p>
+    <input ref={input} type="file" accept="application/pdf,.pdf" aria-label="Choisir un CV au format PDF" className="sr-only" onChange={(e) => upload(e.target.files?.[0])} />
     <div className="mt-5 flex flex-wrap gap-3">
       <Button variant="accent" size="lg" disabled={busy} onClick={() => input.current?.click()}>{busy ? <Loader2 className="animate-spin" /> : <Upload />}{busy ? "Importation…" : resumePath ? "Remplacer mon CV" : "Importer mon CV"}</Button>
       {resumePath && <Button variant="outline" size="lg" onClick={download}><Download />Télécharger</Button>}

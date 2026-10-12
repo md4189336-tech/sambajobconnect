@@ -2,7 +2,7 @@ import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Ban, CheckCircle2, CreditCard, Download, Eye, FileText, LogOut, RefreshCw, Search, ShieldCheck, UserCheck, Users } from "lucide-react";
+import { Ban, Building2, CheckCircle2, CreditCard, Download, Eye, FileText, LogOut, RefreshCw, Search, ShieldCheck, UserCheck, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { type AppRole } from "@/lib/role-home";
 import { Button } from "@/components/ui/button";
@@ -58,14 +58,48 @@ function AdminPage() {
             <TabsTrigger value="overview" className="min-h-10">Vue d'ensemble</TabsTrigger>
             <TabsTrigger value="users" className="min-h-10">Utilisateurs & paiements</TabsTrigger>
             <TabsTrigger value="docs" className="min-h-10">Documents & CV</TabsTrigger>
+            <TabsTrigger value="companies" className="min-h-10">Vérification entreprises</TabsTrigger>
           </TabsList>
           <TabsContent value="overview"><Overview /></TabsContent>
           <TabsContent value="users"><UsersPanel /></TabsContent>
           <TabsContent value="docs"><DocsPanel /></TabsContent>
+          <TabsContent value="companies"><CompanyVerificationPanel /></TabsContent>
         </Tabs>
       </main>
     </div>
   );
+}
+
+function CompanyVerificationPanel() {
+  const qc = useQueryClient();
+  const { data, isLoading, error } = useQuery({ queryKey: ["admin-company-verification"], queryFn: async () => {
+    const { data, error } = await supabase.from("company_profiles").select("user_id,company_name,registration_number,website,country,city,description,verification_status,verification_note,updated_at").neq("verification_status", "verified").order("updated_at", { ascending: false });
+    if (error) throw error;
+    return data;
+  } });
+  const decide = async (userId: string, status: "verified" | "rejected") => {
+    const { error } = await supabase.rpc("admin_set_company_verification", { _target: userId, _status: status, _note: status === "rejected" ? "Dossier à compléter ou à corriger." : "" });
+    if (error) { toast.error("Impossible de mettre à jour ce dossier."); return; }
+    toast.success(status === "verified" ? "Entreprise vérifiée." : "Dossier refusé.");
+    await qc.invalidateQueries({ queryKey: ["admin-company-verification"] });
+  };
+  return <section className="mt-6 space-y-4">
+    <h2 className="text-xl font-bold text-primary">Dossiers de vérification</h2>
+    {isLoading && <p role="status">Chargement des dossiers…</p>}
+    {error && <p role="alert">Impossible de charger les dossiers de vérification.</p>}
+    {!isLoading && !error && !data?.length && <p className="rounded-lg border p-5 text-sm text-muted-foreground">Aucun dossier en attente.</p>}
+    {data?.map((company) => <article key={company.user_id} className="rounded-lg border bg-card p-5">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0"><h3 className="flex items-center gap-2 font-bold"><Building2 className="size-5 text-accent" />{company.company_name}</h3>
+          <p className="mt-1 text-sm text-muted-foreground">{company.registration_number} · {company.city}, {company.country}</p>
+          {company.website && <p className="text-sm">{company.website}</p>}
+          {company.verification_note && <p className="mt-2 text-sm text-destructive">{company.verification_note}</p>}
+        </div>
+        <div className="flex gap-2"><Button variant="outline" onClick={() => decide(company.user_id, "rejected")}>Refuser</Button><Button variant="accent" onClick={() => decide(company.user_id, "verified")}><ShieldCheck />Vérifier</Button></div>
+      </div>
+      {company.description && <p className="mt-3 text-sm text-muted-foreground">{company.description}</p>}
+    </article>)}
+  </section>;
 }
 
 function useStats() {

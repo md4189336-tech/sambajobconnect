@@ -3,8 +3,7 @@ import { ArrowRight, Building2, FileUp, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageShell } from "@/components/site/PageShell";
 import { JobSearchBar } from "@/components/site/JobSearchBar";
-import { JobCard } from "@/components/site/JobCard";
-import { jobs, platformStats } from "@/data/mock";
+import { platformStats } from "@/data/mock";
 import { sectors as sectorIcons } from "@/data/sectors";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { catalogOptions } from "@/lib/catalog";
@@ -79,8 +78,8 @@ function Home() {
           <Link to="/jobs" className="flex items-center gap-1 text-sm font-semibold text-accent hover:underline">Toutes les offres <ArrowRight className="size-4" /></Link>
         </div>
         <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {catalog.jobs.slice(0, 6).map((j) => <DatabaseJobCard key={j.id} job={j} />)}
-          {jobs.slice(0, Math.max(0, 6 - catalog.jobs.length)).map((j) => <JobCard key={j.id} job={j} />)}
+          {catalog.jobs.slice(0, 6).map((j) => <DatabaseJobCard key={j.id} job={j} verified={(j.company_id !== null && catalog.verifiedCompanyIds.includes(j.company_id)) || catalog.verifiedCompanyOwners.includes(j.recruiter_id)} />)}
+          {catalog.jobs.length === 0 && <p className="col-span-full rounded-lg border bg-card p-6 text-center text-sm text-muted-foreground">Aucune offre publiée pour le moment. Revenez bientôt découvrir les nouvelles opportunités.</p>}
         </div>
       </section>
 

@@ -11,6 +11,11 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
+import {
+  SupabaseConnectionStatus,
+  type SupabaseConnectionState,
+} from "@/components/site/SupabaseConnectionStatus";
+import { supabase } from "@/integrations/supabase/client";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
@@ -75,6 +80,28 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  loader: async (): Promise<{ supabaseConnection: SupabaseConnectionState }> => {
+    try {
+      const { data, error } = await supabase.from("sectors").select("id,name").limit(1);
+      if (error) throw error;
+      return { supabaseConnection: { status: "connected", sectorName: data[0]?.name ?? null } };
+    } catch (error) {
+      const details =
+        error && typeof error === "object"
+          ? (error as { code?: string; message?: string; details?: string; hint?: string })
+          : undefined;
+      const message = [
+        details?.code ? `Code ${details.code}` : undefined,
+        details?.message ?? (error instanceof Error ? error.message : String(error)),
+        details?.details,
+        details?.hint ? `Conseil : ${details.hint}` : undefined,
+      ]
+        .filter(Boolean)
+        .join(" — ");
+      console.error(`Échec de connexion à Supabase : ${message}`);
+      return { supabaseConnection: { status: "error", message } };
+    }
+  },
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -115,12 +142,14 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const { supabaseConnection } = Route.useLoaderData();
 
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
       <Toaster position="top-center" />
+      <SupabaseConnectionStatus connection={supabaseConnection} />
     </QueryClientProvider>
   );
 }

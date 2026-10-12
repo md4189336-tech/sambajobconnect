@@ -11,6 +11,7 @@ import { SectorJobSelect } from "@/components/site/SectorJobSelect";
 import { catalogOptions } from "@/lib/catalog";
 import { pageMeta } from "@/lib/page-meta";
 import { supabase } from "@/integrations/supabase/client";
+import { countries, experienceLevels } from "@/data/mock";
 
 export const Route = createFileRoute("/_authenticated/post-job")({
   head: () => pageMeta("Publier une offre", "Publiez une offre d'emploi avec son secteur et son métier.", true),
@@ -35,9 +36,30 @@ function PostJobPage() {
     if (!catalog.titles.some((t) => t.sector_slug === sector && t.name === jobTitle)) { toast.error("Choisissez un secteur et un métier valides."); return; }
     const title = String(form.get("title") || "").trim(); const description = String(form.get("description") || "").trim();
     if (title.length < 3 || description.length < 30) { toast.error("Le titre doit contenir au moins 3 caractères et la description 30 caractères."); return; }
+    const salaryMin = form.get("salary_min") ? Number(form.get("salary_min")) : null;
+    const salaryMax = form.get("salary_max") ? Number(form.get("salary_max")) : null;
+    if ((salaryMin !== null && salaryMin < 0) || (salaryMax !== null && salaryMax < 0) || (salaryMin !== null && salaryMax !== null && salaryMin > salaryMax)) {
+      toast.error("Vérifiez la fourchette de salaire : les montants doivent être positifs et le maximum supérieur au minimum."); return;
+    }
     setBusy(true);
     try {
-      const { data, error } = await supabase.from("jobs").insert({ recruiter_id: user.id, title, description, sector, job_title: jobTitle, location: String(form.get("location") || "").trim(), company_name: String(form.get("company_name") || "").trim(), contract: String(form.get("contract")), status: "published" }).select("id").single();
+      const { data, error } = await supabase.from("jobs").insert({
+        recruiter_id: user.id,
+        title,
+        description,
+        sector,
+        job_title: jobTitle,
+        location: String(form.get("location") || "").trim(),
+        country: String(form.get("country") || "Sénégal"),
+        company_name: String(form.get("company_name") || "").trim(),
+        contract: String(form.get("contract")),
+        salary_min: salaryMin,
+        salary_max: salaryMax,
+        experience: String(form.get("experience") || ""),
+        required_degree: String(form.get("required_degree") || "").trim(),
+        remote: form.get("remote") === "on",
+        status: "published",
+      }).select("id").single();
       if (error) throw error;
       await qc.invalidateQueries({ queryKey: ["public-catalog"] }); setCreated(data.id); toast.success("Offre publiée avec succès !");
     } catch { toast.error("Impossible de publier l'offre. Réessayez."); } finally { setBusy(false); }
@@ -48,7 +70,16 @@ function PostJobPage() {
       <label className="block space-y-2 text-sm font-semibold">Titre du poste<Input name="title" required minLength={3} maxLength={200} /></label>
       <label className="block space-y-2 text-sm font-semibold">Entreprise<Input name="company_name" required maxLength={200} /></label>
       <SectorJobSelect sector={sector} jobTitle={jobTitle} onSectorChange={setSector} onJobTitleChange={setJobTitle} required />
-      <div className="grid gap-5 sm:grid-cols-2"><label className="space-y-2 text-sm font-semibold">Ville<Input name="location" required maxLength={120} /></label><label className="space-y-2 text-sm font-semibold">Type de contrat<select name="contract" className="h-12 w-full rounded-md border bg-card px-3">{["CDI", "CDD", "Stage", "Freelance", "Alternance", "Mission"].map((c) => <option key={c}>{c}</option>)}</select></label></div>
+      <div className="grid gap-5 sm:grid-cols-2">
+        <label className="space-y-2 text-sm font-semibold">Pays<select name="country" defaultValue="Sénégal" className="h-12 w-full rounded-md border bg-card px-3">{countries.map((country) => <option key={country}>{country}</option>)}</select></label>
+        <label className="space-y-2 text-sm font-semibold">Ville<Input name="location" required maxLength={120} /></label>
+        <label className="space-y-2 text-sm font-semibold">Type de contrat<select name="contract" className="h-12 w-full rounded-md border bg-card px-3">{["CDI", "CDD", "Stage", "Freelance", "Alternance", "Mission"].map((c) => <option key={c}>{c}</option>)}</select></label>
+        <label className="space-y-2 text-sm font-semibold">Expérience requise<select name="experience" className="h-12 w-full rounded-md border bg-card px-3"><option value="">Indifférente</option>{experienceLevels.map((level) => <option key={level}>{level}</option>)}</select></label>
+        <label className="space-y-2 text-sm font-semibold">Salaire minimum (FCFA / mois)<Input name="salary_min" type="number" min={0} step={10000} /></label>
+        <label className="space-y-2 text-sm font-semibold">Salaire maximum (FCFA / mois)<Input name="salary_max" type="number" min={0} step={10000} /></label>
+        <label className="space-y-2 text-sm font-semibold sm:col-span-2">Diplôme requis<Input name="required_degree" maxLength={200} placeholder="Ex. BTS, Bac+3 ou équivalent" /></label>
+      </div>
+      <label className="flex min-h-11 items-center gap-3 text-sm"><input name="remote" type="checkbox" className="size-4 accent-[var(--accent)]" />Télétravail possible</label>
       <label className="block space-y-2 text-sm font-semibold">Description du poste<Textarea name="description" rows={8} required minLength={30} maxLength={15000} /></label>
       <Button type="submit" variant="accent" size="lg" disabled={busy}><Send />{busy ? "Publication…" : "Publier l'offre"}</Button>
     </form>}
