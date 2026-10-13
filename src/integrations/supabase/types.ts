@@ -14,6 +14,92 @@ export type Database = {
   }
   public: {
     Tables: {
+      applications: {
+        Row: {
+          candidate_email: string
+          candidate_id: string
+          candidate_name: string
+          cover_letter: string
+          created_at: string
+          id: string
+          interview_at: string | null
+          interview_note: string
+          job_id: string
+          resume_path: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          candidate_email?: string
+          candidate_id: string
+          candidate_name?: string
+          cover_letter?: string
+          created_at?: string
+          id?: string
+          interview_at?: string | null
+          interview_note?: string
+          job_id: string
+          resume_path?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          candidate_email?: string
+          candidate_id?: string
+          candidate_name?: string
+          cover_letter?: string
+          created_at?: string
+          id?: string
+          interview_at?: string | null
+          interview_note?: string
+          job_id?: string
+          resume_path?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "applications_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      candidate_entries: {
+        Row: {
+          created_at: string
+          details: string
+          id: string
+          kind: string
+          organization: string
+          period: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          details?: string
+          id?: string
+          kind: string
+          organization?: string
+          period?: string
+          title?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          details?: string
+          id?: string
+          kind?: string
+          organization?: string
+          period?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       candidate_profiles: {
         Row: {
           bio: string
@@ -59,6 +145,78 @@ export type Database = {
         }
         Relationships: []
       }
+      companies: {
+        Row: {
+          city: string
+          country: string
+          created_at: string
+          description: string
+          id: string
+          is_verified: boolean
+          name: string
+          owner_id: string
+          phone: string
+          website: string
+        }
+        Insert: {
+          city?: string
+          country?: string
+          created_at?: string
+          description?: string
+          id?: string
+          is_verified?: boolean
+          name?: string
+          owner_id: string
+          phone?: string
+          website?: string
+        }
+        Update: {
+          city?: string
+          country?: string
+          created_at?: string
+          description?: string
+          id?: string
+          is_verified?: boolean
+          name?: string
+          owner_id?: string
+          phone?: string
+          website?: string
+        }
+        Relationships: []
+      }
+      job_alerts: {
+        Row: {
+          city: string
+          contract: string
+          created_at: string
+          id: string
+          is_active: boolean
+          job_title: string
+          sector: string
+          user_id: string
+        }
+        Insert: {
+          city?: string
+          contract?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          job_title?: string
+          sector?: string
+          user_id: string
+        }
+        Update: {
+          city?: string
+          contract?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          job_title?: string
+          sector?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       job_titles: {
         Row: {
           id: string
@@ -90,45 +248,87 @@ export type Database = {
       }
       jobs: {
         Row: {
+          city: string
+          company_id: string | null
           company_name: string
           contract: string
+          country: string
           created_at: string
           description: string
+          education_level: string
+          experience_level: string
           id: string
+          is_remote: boolean
           job_title: string
           location: string
           recruiter_id: string
+          salary_max: number | null
+          salary_min: number | null
           sector: string
+          sector_id: string | null
           status: string
           title: string
         }
         Insert: {
+          city?: string
+          company_id?: string | null
           company_name?: string
           contract?: string
+          country?: string
           created_at?: string
           description?: string
+          education_level?: string
+          experience_level?: string
           id?: string
+          is_remote?: boolean
           job_title?: string
           location?: string
           recruiter_id: string
+          salary_max?: number | null
+          salary_min?: number | null
           sector?: string
+          sector_id?: string | null
           status?: string
           title: string
         }
         Update: {
+          city?: string
+          company_id?: string | null
           company_name?: string
           contract?: string
+          country?: string
           created_at?: string
           description?: string
+          education_level?: string
+          experience_level?: string
           id?: string
+          is_remote?: boolean
           job_title?: string
           location?: string
           recruiter_id?: string
+          salary_max?: number | null
+          salary_min?: number | null
           sector?: string
+          sector_id?: string | null
           status?: string
           title?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "jobs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jobs_sector_id_fkey"
+            columns: ["sector_id"]
+            isOneToOne: false
+            referencedRelation: "sectors"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payments: {
         Row: {
@@ -194,6 +394,7 @@ export type Database = {
         Row: {
           description: string
           icon: string
+          id: string
           name: string
           slug: string
           sort_order: number
@@ -201,6 +402,7 @@ export type Database = {
         Insert: {
           description?: string
           icon?: string
+          id?: string
           name: string
           slug: string
           sort_order?: number
@@ -208,6 +410,7 @@ export type Database = {
         Update: {
           description?: string
           icon?: string
+          id?: string
           name?: string
           slug?: string
           sort_order?: number
@@ -275,6 +478,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_job_owner: { Args: { _job_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "candidate" | "recruiter" | "institution" | "admin"
