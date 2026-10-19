@@ -50,7 +50,7 @@ function RecruiterPage() {
   useEffect(() => {
     const pendingIds = data.applications.filter((application) => application.status === "pending").map((application) => application.id);
     if (!pendingIds.length) return;
-    void supabase.from("applications").update({ status: "viewed", updated_at: new Date().toISOString() }).in("id", pendingIds)
+    void supabase.from("applications").update({ status: "reviewed", updated_at: new Date().toISOString() }).in("id", pendingIds)
       .then(({ error }) => { if (!error) void qc.invalidateQueries({ queryKey: ["recruiter-workspace", user.id] }); });
   }, [data.applications, qc, user.id]);
 
@@ -157,7 +157,7 @@ function RecruiterPage() {
         <label className="space-y-2 text-sm font-semibold">Site web<Input name="website" type="url" maxLength={255} defaultValue={data.company?.website} placeholder="https://" /></label>
         <label className="space-y-2 text-sm font-semibold">Pays<Input name="country" maxLength={100} defaultValue={data.company?.country || "Sénégal"} /></label>
         <label className="space-y-2 text-sm font-semibold">Ville<Input name="city" maxLength={120} defaultValue={data.company?.city} /></label>
-        <label className="space-y-2 text-sm font-semibold">Secteur d'activité<select name="sector_id" defaultValue={catalog.sectors.find((sector) => sector.slug === data.company?.sector_id)?.id ?? ""} className="h-12 w-full rounded-md border bg-card px-3"><option value="">Choisir un secteur</option>{catalog.sectors.map((sector) => <option key={sector.slug} value={sector.id}>{sector.name}</option>)}</select></label>
+        <label className="space-y-2 text-sm font-semibold">Secteur d'activité<select name="sector_id" defaultValue={catalog.sectors.find((sector) => sector.id === data.company?.sector_id)?.id ?? ""} className="h-12 w-full rounded-md border bg-card px-3"><option value="">Choisir un secteur</option>{catalog.sectors.map((sector) => <option key={sector.slug} value={sector.id}>{sector.name}</option>)}</select></label>
         <label className="space-y-2 text-sm font-semibold sm:col-span-2">Présentation<Textarea name="description" rows={4} maxLength={4000} defaultValue={data.company?.description} /></label>
         <Button type="submit" variant="outline" className="sm:col-span-2"><Building2 />Enregistrer le profil</Button>
       </form>

@@ -15,10 +15,14 @@ export const recruiterOptions = (userId: string) => queryOptions({
     if (company.error) {
       console.error("[Espace entreprise] Impossible de lire companies :", company.error.message);
     }
-    const companyData = legacyCompany.data ?? (company.data ? {
+    const companyData = legacyCompany.data ? {
+      ...legacyCompany.data,
+      sector_id: company.data?.sector_id ?? null,
+    } : company.data ? {
       user_id: company.data.owner_id,
       company_name: company.data.name,
       registration_number: "",
+      sector_id: company.data.sector_id,
       website: company.data.website ?? "",
       country: company.data.country,
       city: company.data.city,
@@ -27,7 +31,7 @@ export const recruiterOptions = (userId: string) => queryOptions({
       verification_note: "",
       verified_at: null,
       updated_at: company.data.created_at,
-    } : null);
+    } : null;
     const jobIds = jobs.data.map((job) => job.id);
     if (!jobIds.length) return { company: companyData, jobs: jobs.data, applications: [], candidates: candidates.data, shortlists: shortlists.data };
     const { data: applications, error: applicationError } = await supabase.from("applications").select("*").in("job_id", jobIds).order("created_at", { ascending: false });

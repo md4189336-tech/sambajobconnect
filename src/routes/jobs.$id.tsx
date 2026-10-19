@@ -72,11 +72,16 @@ function DatabaseJobDetail({ job, verified }: { job: { id: string; title: string
         toast.error("La candidature est réservée aux comptes candidats.");
         return;
       }
-      const { data: candidate } = await supabase
+      const { data: candidate, error: candidateError } = await supabase
         .from("candidate_profiles")
         .select("resume_path")
         .eq("user_id", auth.user.id)
         .maybeSingle();
+      if (candidateError) {
+        console.error("[Candidature] Impossible de charger le CV du candidat :", candidateError);
+        toast.error("Impossible de charger votre profil candidat. Réessayez.");
+        return;
+      }
       const { error } = await supabase.from("applications").insert({
         job_id: job.id,
         candidate_id: auth.user.id,

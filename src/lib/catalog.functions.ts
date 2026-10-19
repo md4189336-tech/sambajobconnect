@@ -70,7 +70,7 @@ export const getPublicCatalog = createServerFn({ method: "GET" }).handler(async 
       .select("*")
       .eq("status", "published")
       .order("created_at", { ascending: false }),
-    client.from("companies").select("id,owner_id,is_verified"),
+    client.from("companies").select("id,owner_id,name,is_verified"),
   ]);
 
   if (sectorResult.error) reportCatalogError("Lecture des secteurs (taxonomie locale utilisée)", sectorResult.error);
@@ -122,9 +122,12 @@ export const getPublicCatalog = createServerFn({ method: "GET" }).handler(async 
 
   let verifiedCompanyIds: string[] = [];
   let verifiedCompanyOwners: string[] = [];
+  const verifiedCompanyNames = new Map<string, string>();
   if (!companyResult.error) {
-    verifiedCompanyIds = companyResult.data.filter((company) => company.is_verified).map((company) => company.id);
-    verifiedCompanyOwners = companyResult.data.filter((company) => company.is_verified).map((company) => company.owner_id);
+    const verifiedCompanies = companyResult.data.filter((company) => company.is_verified);
+    verifiedCompanyIds = verifiedCompanies.map((company) => company.id);
+    verifiedCompanyOwners = verifiedCompanies.map((company) => company.owner_id);
+    for (const company of verifiedCompanies) verifiedCompanyNames.set(company.id, company.name);
   } else {
     reportCatalogError("Lecture des entreprises (essai de compatibilité historique)", companyResult.error);
     const legacyCompanies = await client
@@ -138,10 +141,29 @@ export const getPublicCatalog = createServerFn({ method: "GET" }).handler(async 
     }
   }
 
+  const databaseSectors = new Map(
+    (sectorResult.error ? [] : sectorResult.data).map((sector) => [sector.slug, sector]),
+  );
+  const databaseTitles = new Map(
+    (titleResult.error ? [] : titleResult.data).map((title) => [`${title.sector_slug}\0${title.name}`, title]),
+  );
+  const sectors = localCatalog.sectors.map((sector) => ({
+    ...sector,
+    id: databaseSectors.get(sector.slug)?.id ?? sector.id,
+  }));
+  const titles = localCatalog.titles.map((title) => {
+    const databaseTitle = databaseTitles.get(`${title.sector_slug}\0${title.name}`);
+    return databaseTitle ? { ...databaseTitle } : title;
+  });
+  const publishedJobs = jobs.map((job) => ({
+    ...job,
+    company_name: job.company_name || (job.company_id ? verifiedCompanyNames.get(job.company_id) : undefined) || "Entreprise",
+  }));
+
   return {
-    sectors: sectorResult.error ? localCatalog.sectors : sectorResult.data,
-    titles: titleResult.error ? localCatalog.titles : titleResult.data,
-    jobs,
+    sectors,
+    titles,
+    jobs: publishedJobs,
     verifiedCompanyIds,
     verifiedCompanyOwners,
   };

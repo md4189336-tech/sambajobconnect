@@ -17,7 +17,7 @@ export const Route = createFileRoute("/_authenticated/post-job")({
   head: () => pageMeta("Publier une offre", "Publiez une offre d'emploi avec son secteur et son métier.", true),
   beforeLoad: async ({ context }) => {
     const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", context.user.id);
-    if (error || !data?.some((row) => row.role === "recruiter" || row.role === "admin")) throw redirect({ to: "/login" });
+    if (error || !data?.some((row) => row.role === "recruiter" || row.role === "company" || row.role === "admin")) throw redirect({ to: "/login" });
   },
   loader: ({ context }) => context.queryClient.ensureQueryData(catalogOptions),
   errorComponent: () => <PageShell><p role="alert" className="p-10 text-center">Impossible de charger le formulaire. Actualisez la page.</p></PageShell>,
@@ -43,26 +43,72 @@ function PostJobPage() {
     }
     setBusy(true);
     try {
-      const { data, error } = await supabase.from("jobs").insert({
+      const company = await supabase.from("companies").select("id").eq("owner_id", user.id).maybeSingle();
+      if (company.error) {
+        console.error("[Publication offre] Impossible de trouver le profil companies :", company.error);
+      }
+      const sectorId = catalog.sectors.find((item) => item.slug === sector)?.id;
+      const modern = await supabase.from("jobs").insert({
         recruiter_id: user.id,
         title,
         description,
+        company_id: company.data?.id ?? null,
+        sector_id: sectorId && /^[0-9a-f-]{36}$/i.test(sectorId) ? sectorId : null,
         sector,
         job_title: jobTitle,
         location: String(form.get("location") || "").trim(),
+        city: String(form.get("location") || "").trim(),
         country: String(form.get("country") || "Sénégal"),
         company_name: String(form.get("company_name") || "").trim(),
         contract: String(form.get("contract")),
+        contract_type: String(form.get("contract")),
         salary_min: salaryMin,
         salary_max: salaryMax,
+        salary_range: salaryMin !== null && salaryMax !== null
+          ? `${salaryMin}-${salaryMax}`
+          : salaryMin !== null ? `${salaryMin}+` : salaryMax !== null ? `0-${salaryMax}` : null,
         experience: String(form.get("experience") || ""),
+        experience_level: String(form.get("experience") || ""),
         required_degree: String(form.get("required_degree") || "").trim(),
+        education_level: String(form.get("required_degree") || "").trim(),
         remote: form.get("remote") === "on",
+        is_remote: form.get("remote") === "on",
         status: "published",
       }).select("id").single();
-      if (error) throw error;
-      await qc.invalidateQueries({ queryKey: ["public-catalog"] }); setCreated(data.id); toast.success("Offre publiée avec succès !");
-    } catch { toast.error("Impossible de publier l'offre. Réessayez."); } finally { setBusy(false); }
+      let createdJob = modern.data;
+      if (modern.error && ["PGRST204", "42703"].includes(modern.error.code ?? "")) {
+        console.warn("[Publication offre] Schéma récent indisponible, repli sur les colonnes historiques.", modern.error);
+        const legacy = await supabase.from("jobs").insert({
+          recruiter_id: user.id,
+          title,
+          description,
+          sector,
+          job_title: jobTitle,
+          location: String(form.get("location") || "").trim(),
+          country: String(form.get("country") || "Sénégal"),
+          company_name: String(form.get("company_name") || "").trim(),
+          contract: String(form.get("contract")),
+          salary_min: salaryMin,
+          salary_max: salaryMax,
+          experience: String(form.get("experience") || ""),
+          required_degree: String(form.get("required_degree") || "").trim(),
+          remote: form.get("remote") === "on",
+          status: "published",
+        }).select("id").single();
+        if (legacy.error) throw legacy.error;
+        createdJob = legacy.data;
+      } else if (modern.error) {
+        throw modern.error;
+      }
+      if (!createdJob) throw new Error("Supabase n'a retourné aucun identifiant d'offre.");
+      await qc.invalidateQueries({ queryKey: ["public-catalog"] });
+      await qc.invalidateQueries({ queryKey: ["public-jobs"] });
+      setCreated(createdJob.id);
+      toast.success("Offre publiée avec succès !");
+    } catch (error) {
+      console.error("[Publication offre] Échec :", error);
+      toast.error(error instanceof Error ? `Impossible de publier l'offre : ${error.message}` : "Impossible de publier l'offre. Réessayez.");
+    } finally { setBusy(false); }
   };
   return <PageShell><div className="mx-auto max-w-3xl px-4 py-10"><h1 className="text-3xl font-bold text-primary">Publier une offre</h1>
     {created ? <div role="status" className="mt-8 space-y-5"><h2 className="text-xl font-semibold">Votre offre est publiée.</h2><Button asChild variant="accent"><Link to="/jobs/$id" params={{ id: created }}>Voir mon offre</Link></Button><Button variant="outline" onClick={() => setCreated(undefined)}>Publier une autre offre</Button></div> :

@@ -103,7 +103,7 @@ GRANT SELECT ON public.companies TO anon, authenticated;
 REVOKE INSERT, UPDATE ON public.companies FROM authenticated;
 GRANT INSERT (owner_id, name, description, sector_id, logo_url, website, country, city)
   ON public.companies TO authenticated;
-GRANT UPDATE (name, description, sector_id, logo_url, website, country, city)
+GRANT UPDATE (owner_id, name, description, sector_id, logo_url, website, country, city)
   ON public.companies TO authenticated;
 GRANT DELETE ON public.companies TO authenticated;
 GRANT ALL ON public.companies TO service_role;
