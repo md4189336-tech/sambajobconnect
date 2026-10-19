@@ -14,18 +14,101 @@ export type Database = {
   }
   public: {
     Tables: {
+      applications: {
+        Row: {
+          candidate_email: string
+          candidate_id: string
+          candidate_name: string
+          cover_letter: string
+          created_at: string
+          id: string
+          interview_at: string | null
+          interview_note: string
+          job_id: string
+          resume_path: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          candidate_email?: string
+          candidate_id: string
+          candidate_name?: string
+          cover_letter?: string
+          created_at?: string
+          id?: string
+          interview_at?: string | null
+          interview_note?: string
+          job_id: string
+          resume_path?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          candidate_email?: string
+          candidate_id?: string
+          candidate_name?: string
+          cover_letter?: string
+          created_at?: string
+          id?: string
+          interview_at?: string | null
+          interview_note?: string
+          job_id?: string
+          resume_path?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "applications_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      candidate_entries: {
+        Row: {
+          created_at: string
+          details: string
+          id: string
+          kind: string
+          organization: string
+          period: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          details?: string
+          id?: string
+          kind: string
+          organization?: string
+          period?: string
+          title?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          details?: string
+          id?: string
+          kind?: string
+          organization?: string
+          period?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       candidate_profiles: {
         Row: {
           bio: string
           display_name: string
-          education: string
           experience: string
-          experience_details: string
           headline: string
           is_visible: boolean
           job_title: string
           location: string
-          professional_references: string
           resume_path: string | null
           sector: string
           skills: string
@@ -35,14 +118,11 @@ export type Database = {
         Insert: {
           bio?: string
           display_name?: string
-          education?: string
           experience?: string
-          experience_details?: string
           headline?: string
           is_visible?: boolean
           job_title?: string
           location?: string
-          professional_references?: string
           resume_path?: string | null
           sector?: string
           skills?: string
@@ -52,18 +132,87 @@ export type Database = {
         Update: {
           bio?: string
           display_name?: string
-          education?: string
           experience?: string
-          experience_details?: string
           headline?: string
           is_visible?: boolean
           job_title?: string
           location?: string
-          professional_references?: string
           resume_path?: string | null
           sector?: string
           skills?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      companies: {
+        Row: {
+          city: string
+          country: string
+          created_at: string
+          description: string
+          id: string
+          is_verified: boolean
+          name: string
+          owner_id: string
+          phone: string
+          website: string
+        }
+        Insert: {
+          city?: string
+          country?: string
+          created_at?: string
+          description?: string
+          id?: string
+          is_verified?: boolean
+          name?: string
+          owner_id: string
+          phone?: string
+          website?: string
+        }
+        Update: {
+          city?: string
+          country?: string
+          created_at?: string
+          description?: string
+          id?: string
+          is_verified?: boolean
+          name?: string
+          owner_id?: string
+          phone?: string
+          website?: string
+        }
+        Relationships: []
+      }
+      job_alerts: {
+        Row: {
+          city: string
+          contract: string
+          created_at: string
+          id: string
+          is_active: boolean
+          job_title: string
+          sector: string
+          user_id: string
+        }
+        Insert: {
+          city?: string
+          contract?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          job_title?: string
+          sector?: string
+          user_id: string
+        }
+        Update: {
+          city?: string
+          contract?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          job_title?: string
+          sector?: string
           user_id?: string
         }
         Relationships: []
@@ -99,84 +248,66 @@ export type Database = {
       }
       jobs: {
         Row: {
-          company_name: string
-          company_id: string | null
-          contract: string
-          contract_type: string
-          created_at: string
-          country: string
           city: string
+          company_id: string | null
+          company_name: string
+          contract: string
+          country: string
+          created_at: string
           description: string
           education_level: string
-          experience: string
           experience_level: string
           id: string
-          is_featured: boolean
           is_remote: boolean
           job_title: string
           location: string
-          remote: boolean
-          required_degree: string
           recruiter_id: string
           salary_max: number | null
           salary_min: number | null
-          salary_range: string | null
           sector: string
           sector_id: string | null
           status: string
           title: string
         }
         Insert: {
-          company_name?: string
-          company_id?: string | null
-          contract?: string
-          contract_type?: string
-          created_at?: string
-          country?: string
           city?: string
+          company_id?: string | null
+          company_name?: string
+          contract?: string
+          country?: string
+          created_at?: string
           description?: string
           education_level?: string
-          experience?: string
           experience_level?: string
           id?: string
-          is_featured?: boolean
           is_remote?: boolean
           job_title?: string
           location?: string
-          remote?: boolean
-          required_degree?: string
           recruiter_id: string
           salary_max?: number | null
           salary_min?: number | null
-          salary_range?: string | null
           sector?: string
           sector_id?: string | null
           status?: string
           title: string
         }
         Update: {
-          company_name?: string
-          company_id?: string | null
-          contract?: string
-          contract_type?: string
-          created_at?: string
-          country?: string
           city?: string
+          company_id?: string | null
+          company_name?: string
+          contract?: string
+          country?: string
+          created_at?: string
           description?: string
           education_level?: string
-          experience?: string
           experience_level?: string
           id?: string
-          is_featured?: boolean
           is_remote?: boolean
           job_title?: string
           location?: string
-          remote?: boolean
-          required_degree?: string
           recruiter_id?: string
           salary_max?: number | null
           salary_min?: number | null
-          salary_range?: string | null
           sector?: string
           sector_id?: string | null
           status?: string
@@ -198,146 +329,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      applications: {
-        Row: {
-          candidate_id: string
-          cover_letter: string
-          created_at: string
-          cv_url: string | null
-          id: string
-          interview_at: string | null
-          job_id: string
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          candidate_id: string
-          cover_letter?: string
-          created_at?: string
-          cv_url?: string | null
-          id?: string
-          interview_at?: string | null
-          job_id: string
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          candidate_id?: string
-          cover_letter?: string
-          created_at?: string
-          cv_url?: string | null
-          id?: string
-          interview_at?: string | null
-          job_id?: string
-          status?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "applications_job_id_fkey"
-            columns: ["job_id"]
-            isOneToOne: false
-            referencedRelation: "jobs"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      candidate_alerts: {
-        Row: {
-          active: boolean
-          candidate_id: string
-          city: string
-          country: string
-          created_at: string
-          id: string
-          job_title: string
-          name: string
-          sector: string
-        }
-        Insert: {
-          active?: boolean
-          candidate_id: string
-          city?: string
-          country?: string
-          created_at?: string
-          id?: string
-          job_title?: string
-          name?: string
-          sector?: string
-        }
-        Update: {
-          active?: boolean
-          candidate_id?: string
-          city?: string
-          country?: string
-          created_at?: string
-          id?: string
-          job_title?: string
-          name?: string
-          sector?: string
-        }
-        Relationships: []
-      }
-      candidate_shortlists: {
-        Row: {
-          candidate_id: string
-          created_at: string
-          recruiter_id: string
-        }
-        Insert: {
-          candidate_id: string
-          created_at?: string
-          recruiter_id: string
-        }
-        Update: {
-          candidate_id?: string
-          created_at?: string
-          recruiter_id?: string
-        }
-        Relationships: []
-      }
-      company_profiles: {
-        Row: {
-          city: string
-          company_name: string
-          country: string
-          description: string
-          registration_number: string
-          updated_at: string
-          user_id: string
-          verification_note: string
-          verification_status: string
-          verified_at: string | null
-          website: string
-        }
-        Insert: {
-          city?: string
-          company_name?: string
-          country?: string
-          description?: string
-          registration_number?: string
-          updated_at?: string
-          user_id: string
-          verification_note?: string
-          verification_status?: string
-          verified_at?: string | null
-          website?: string
-        }
-        Update: {
-          city?: string
-          company_name?: string
-          country?: string
-          description?: string
-          registration_number?: string
-          updated_at?: string
-          user_id?: string
-          verification_note?: string
-          verification_status?: string
-          verified_at?: string | null
-          website?: string
-        }
-        Relationships: []
       }
       payments: {
         Row: {
@@ -374,35 +365,26 @@ export type Database = {
       }
       profiles: {
         Row: {
-          avatar_url: string | null
-          bio: string
           created_at: string
           email: string
           full_name: string
           id: string
-          phone: string
           role: Database["public"]["Enums"]["app_role"]
           suspended: boolean
         }
         Insert: {
-          avatar_url?: string | null
-          bio?: string
           created_at?: string
           email?: string
           full_name?: string
           id: string
-          phone?: string
           role?: Database["public"]["Enums"]["app_role"]
           suspended?: boolean
         }
         Update: {
-          avatar_url?: string | null
-          bio?: string
           created_at?: string
           email?: string
           full_name?: string
           id?: string
-          phone?: string
           role?: Database["public"]["Enums"]["app_role"]
           suspended?: boolean
         }
@@ -410,86 +392,30 @@ export type Database = {
       }
       sectors: {
         Row: {
-          created_at: string
           description: string
-          id: string
           icon: string
+          id: string
           name: string
           slug: string
           sort_order: number
         }
         Insert: {
-          created_at?: string
           description?: string
-          id?: string
           icon?: string
+          id?: string
           name: string
           slug: string
           sort_order?: number
         }
         Update: {
-          created_at?: string
           description?: string
-          id?: string
           icon?: string
+          id?: string
           name?: string
           slug?: string
           sort_order?: number
         }
         Relationships: []
-      }
-      companies: {
-        Row: {
-          city: string
-          country: string
-          created_at: string
-          description: string
-          id: string
-          is_verified: boolean
-          logo_url: string | null
-          name: string
-          owner_id: string
-          sector_id: string | null
-          subscription_plan: string
-          website: string | null
-        }
-        Insert: {
-          city?: string
-          country?: string
-          created_at?: string
-          description?: string
-          id?: string
-          is_verified?: boolean
-          logo_url?: string | null
-          name: string
-          owner_id: string
-          sector_id?: string | null
-          subscription_plan?: string
-          website?: string | null
-        }
-        Update: {
-          city?: string
-          country?: string
-          created_at?: string
-          description?: string
-          id?: string
-          is_verified?: boolean
-          logo_url?: string | null
-          name?: string
-          owner_id?: string
-          sector_id?: string | null
-          subscription_plan?: string
-          website?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "companies_sector_id_fkey"
-            columns: ["sector_id"]
-            isOneToOne: false
-            referencedRelation: "sectors"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       user_roles: {
         Row: {
@@ -552,21 +478,10 @@ export type Database = {
         }
         Returns: boolean
       }
-      admin_set_company_verification: {
-        Args: { _note?: string; _status: string; _target: string }
-        Returns: undefined
-      }
-      delete_my_account: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      request_company_verification: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      is_job_owner: { Args: { _job_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "candidate" | "company" | "recruiter" | "institution" | "admin"
+      app_role: "candidate" | "recruiter" | "institution" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -694,7 +609,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["candidate", "company", "recruiter", "institution", "admin"],
+      app_role: ["candidate", "recruiter", "institution", "admin"],
     },
   },
 } as const
