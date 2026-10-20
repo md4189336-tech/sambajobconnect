@@ -23,6 +23,7 @@ function InstitutionsPage() {
         <div>
           <h1 className="text-3xl font-extrabold text-primary">Développer les compétences</h1>
           <p className="mt-2 text-muted-foreground">Formations, institutions partenaires et stages pour les talents de demain.</p>
+          <Button asChild variant="accent" className="mt-5"><Link to="/post-job"><School />Publier une formation</Link></Button>
         </div>
         <section>
           <h2 className="text-xl font-bold text-primary">Formations populaires</h2>

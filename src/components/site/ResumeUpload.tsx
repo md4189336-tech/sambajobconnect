@@ -22,7 +22,10 @@ export function ResumeUpload({ userId, resumePath }: { userId: string; resumePat
       if (error) throw error;
       const saved = await supabase.from("candidate_profiles").upsert({ user_id: userId, resume_path: path, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
       if (saved.error) { await supabase.storage.from("resumes").remove([path]); throw saved.error; }
-      if (resumePath) await supabase.storage.from("resumes").remove([resumePath]);
+      if (resumePath) {
+        const { count, error: applicationError } = await supabase.from("applications").select("id", { count: "exact", head: true }).eq("candidate_id", userId).eq("cv_url", resumePath);
+        if (!applicationError && !count) await supabase.storage.from("resumes").remove([resumePath]);
+      }
       await qc.invalidateQueries({ queryKey: ["candidate-profile", userId] });
       await qc.invalidateQueries({ queryKey: ["admin-resumes"] });
       toast.success("CV importé avec succès !");

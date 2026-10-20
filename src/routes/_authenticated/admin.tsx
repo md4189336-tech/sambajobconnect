@@ -1,6 +1,6 @@
 // @ts-nocheck -- temporary: schema migration in progress
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Ban, Building2, CheckCircle2, CreditCard, Download, Eye, FileText, LogOut, RefreshCw, Search, ShieldCheck, UserCheck, Users } from "lucide-react";
@@ -58,17 +58,96 @@ function AdminPage() {
           <TabsList className="h-auto flex-wrap">
             <TabsTrigger value="overview" className="min-h-10">Vue d'ensemble</TabsTrigger>
             <TabsTrigger value="users" className="min-h-10">Utilisateurs & paiements</TabsTrigger>
+            <TabsTrigger value="applications" className="min-h-10">Candidatures</TabsTrigger>
             <TabsTrigger value="docs" className="min-h-10">Documents & CV</TabsTrigger>
             <TabsTrigger value="companies" className="min-h-10">Vérification entreprises</TabsTrigger>
           </TabsList>
           <TabsContent value="overview"><Overview /></TabsContent>
           <TabsContent value="users"><UsersPanel /></TabsContent>
+          <TabsContent value="applications"><ApplicationsPanel /></TabsContent>
           <TabsContent value="docs"><DocsPanel /></TabsContent>
           <TabsContent value="companies"><CompanyVerificationPanel /></TabsContent>
         </Tabs>
       </main>
     </div>
   );
+}
+
+function ApplicationsPanel() {
+  const qc = useQueryClient();
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const { data: applications = [], isLoading, error } = useQuery({
+    queryKey: ["admin-applications"],
+    queryFn: async () => {
+      const { data: rows, error: applicationsError } = await supabase.from("applications").select("id,job_id,candidate_id,candidate_name,candidate_email,candidate_phone,cover_letter,cv_url,status,interview_at,created_at,updated_at").order("created_at", { ascending: false });
+      if (applicationsError) throw applicationsError;
+      const jobIds = [...new Set(rows.map((application) => application.job_id))];
+      const candidateIds = [...new Set(rows.map((application) => application.candidate_id))];
+      const [jobsResult, profilesResult, candidateProfilesResult] = await Promise.all([
+        jobIds.length ? supabase.from("jobs").select("id,title,recruiter_id,company_name").in("id", jobIds) : Promise.resolve({ data: [], error: null }),
+        candidateIds.length ? supabase.from("profiles").select("id,full_name,email,phone").in("id", candidateIds) : Promise.resolve({ data: [], error: null }),
+        candidateIds.length ? supabase.from("candidate_profiles").select("user_id,display_name,headline,location,resume_path").in("user_id", candidateIds) : Promise.resolve({ data: [], error: null }),
+      ]);
+      if (jobsResult.error || profilesResult.error || candidateProfilesResult.error) throw jobsResult.error ?? profilesResult.error ?? candidateProfilesResult.error;
+      return rows.map((application) => {
+        const profile = profilesResult.data.find((candidate) => candidate.id === application.candidate_id);
+        const candidate = candidateProfilesResult.data.find((item) => item.user_id === application.candidate_id);
+        return {
+          ...application,
+          job: jobsResult.data.find((job) => job.id === application.job_id),
+          name: candidate?.display_name || profile?.full_name || application.candidate_name || "Candidat",
+          email: profile?.email || application.candidate_email,
+          phone: profile?.phone || application.candidate_phone,
+          resume: application.cv_url || candidate?.resume_path,
+        };
+      });
+    },
+  });
+
+  useEffect(() => {
+    const channel = supabase.channel("admin-applications-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "applications" }, () => {
+        void qc.invalidateQueries({ queryKey: ["admin-applications"] });
+      })
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [qc]);
+
+  const openResume = async (path: string) => {
+    const { data, error: signedUrlError } = await supabase.storage.from("resumes").createSignedUrl(path, 300);
+    if (signedUrlError || !data) { toast.error("CV indisponible ou accès non autorisé."); return; }
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  };
+  const statusLabels: Record<string, string> = { pending: "En attente", viewed: "Vue", reviewed: "Examinée", shortlisted: "Présélectionnée", interview: "Entretien", accepted: "Acceptée", rejected: "Refusée" };
+  const visible = applications.filter((application) => (statusFilter === "all" || application.status === statusFilter)
+    && `${application.name} ${application.email} ${application.phone} ${application.job?.title ?? ""} ${application.job?.company_name ?? ""}`.toLowerCase().includes(query.toLowerCase()));
+
+  return <section className="mt-6 space-y-4">
+    <div className="flex flex-col gap-3 sm:flex-row">
+      <Input aria-label="Rechercher une candidature" placeholder="Candidat, e-mail ou offre" value={query} onChange={(event) => setQuery(event.target.value)} />
+      <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger aria-label="Filtrer par statut" className="sm:w-56"><SelectValue /></SelectTrigger>
+        <SelectContent><SelectItem value="all">Tous les statuts</SelectItem>{Object.entries(statusLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent>
+      </Select>
+      <Button variant="outline" size="icon" aria-label="Actualiser les candidatures" onClick={() => void qc.invalidateQueries({ queryKey: ["admin-applications"] })}><RefreshCw /></Button>
+    </div>
+    {isLoading ? <div role="status" className="space-y-3">{Array.from({ length: 3 }).map((_, index) => <Skeleton key={index} className="h-28" />)}</div>
+      : error ? <p role="alert" className="rounded-lg border p-5 text-sm text-destructive">Impossible de charger les candidatures.</p>
+        : !visible.length ? <p className="rounded-lg border p-8 text-center text-sm text-muted-foreground">Aucune candidature à afficher.</p>
+          : <ul className="divide-y rounded-lg border bg-card">{visible.map((application) => <li key={application.id} className="space-y-3 p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0"><h3 className="font-semibold">{application.name}</h3><p className="text-sm text-muted-foreground">{[application.email, application.phone].filter(Boolean).join(" · ")}</p>
+                <p className="mt-1 text-sm">{application.job?.title ?? "Offre supprimée"}{application.job?.company_name ? ` · ${application.job.company_name}` : ""}</p>
+              </div>
+              <Badge variant={application.status === "accepted" ? "default" : application.status === "rejected" ? "destructive" : "secondary"}>{statusLabels[application.status] ?? application.status}</Badge>
+            </div>
+            {application.cover_letter && <p className="whitespace-pre-wrap text-sm text-muted-foreground">{application.cover_letter}</p>}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-3">
+              <p className="text-xs text-muted-foreground">Reçue le {new Date(application.created_at).toLocaleString("fr-FR")} · mise à jour le {new Date(application.updated_at).toLocaleString("fr-FR")}</p>
+              {application.resume && <Button size="sm" variant="outline" onClick={() => openResume(application.resume)}><FileText />Consulter le CV PDF</Button>}
+            </div>
+          </li>)}</ul>}
+  </section>;
 }
 
 function CompanyVerificationPanel() {

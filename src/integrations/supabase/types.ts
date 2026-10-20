@@ -19,6 +19,7 @@ export type Database = {
           candidate_email: string
           candidate_id: string
           candidate_name: string
+           candidate_phone: string
           cover_letter: string
           created_at: string
           id: string
@@ -489,6 +490,54 @@ export type Database = {
   }
 }
 
+      trainings: {
+        Row: {
+          award: string
+          closing_date: string
+          created_at: string
+          description: string
+          duration: string
+          id: string
+          institution_id: string
+          institution_name: string
+          location: string
+          opening_date: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          award: string
+          closing_date: string
+          created_at?: string
+          description: string
+          duration: string
+          id?: string
+          institution_id: string
+          institution_name: string
+          location: string
+          opening_date: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          award?: string
+          closing_date?: string
+          created_at?: string
+          description?: string
+          duration?: string
+          id?: string
+          institution_id?: string
+          institution_name?: string
+          location?: string
+          opening_date?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
 type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]

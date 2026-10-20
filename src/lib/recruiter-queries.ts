@@ -37,16 +37,33 @@ export const recruiterOptions = (userId: string) => queryOptions({
     if (!jobIds.length) return { company: companyData, jobs: jobs.data, applications: [], candidates: candidates.data, shortlists: shortlists.data };
     const { data: applications, error: applicationError } = await supabase.from("applications").select("*").in("job_id", jobIds).order("created_at", { ascending: false });
     if (applicationError) throw new Error("Impossible de charger les candidatures.");
+    const candidateIds = [...new Set(applications.map((application) => application.candidate_id))];
+    const [applicantProfiles, contacts] = candidateIds.length ? await Promise.all([
+      supabase.from("candidate_profiles").select("user_id,display_name,headline,location,sector,job_title,experience,skills,education,experience_details,resume_path,updated_at").in("user_id", candidateIds),
+      supabase.from("profiles").select("id,full_name,email,phone").in("id", candidateIds),
+    ]) : [{ data: [], error: null }, { data: [], error: null }];
+    if (applicantProfiles.error || contacts.error) throw new Error("Impossible de charger les coordonnées des candidats.");
     return {
       company: companyData,
       jobs: jobs.data,
       candidates: candidates.data,
       shortlists: shortlists.data,
-      applications: applications.map((application) => ({
-        ...application,
-        job: jobs.data.find((job) => job.id === application.job_id),
-        candidate: candidates.data.find((candidate) => candidate.user_id === application.candidate_id),
-      })),
+      applications: applications.map((application) => {
+        const profile = applicantProfiles.data.find((candidate) => candidate.user_id === application.candidate_id);
+        const contact = contacts.data.find((candidate) => candidate.id === application.candidate_id);
+        return {
+          ...application,
+          job: jobs.data.find((job) => job.id === application.job_id),
+          candidate: {
+            ...profile,
+            user_id: application.candidate_id,
+            display_name: profile?.display_name || contact?.full_name || application.candidate_name,
+            email: contact?.email || application.candidate_email,
+            phone: contact?.phone || application.candidate_phone,
+            resume_path: application.cv_url || profile?.resume_path || null,
+          },
+        };
+      }),
     };
   },
   staleTime: 15_000,

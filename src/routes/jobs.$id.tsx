@@ -1,5 +1,6 @@
 // @ts-nocheck -- temporary: schema migration in progress
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { Bookmark, BadgeCheck, Briefcase, Clock, Flag, GraduationCap, MapPin, Share2, Wallet } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -56,6 +57,7 @@ function JobDetail() {
 
 function DatabaseJobDetail({ job, verified }: { job: { id: string; title: string; company_name: string; location: string; country: string; contract: string; job_title: string; description: string; salary_min: number | null; salary_max: number | null; experience: string; required_degree: string; remote: boolean }; verified: boolean }) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [applyOpen, setApplyOpen] = useState(false);
   const [cover, setCover] = useState("");
   const [busy, setBusy] = useState(false);
@@ -83,16 +85,30 @@ function DatabaseJobDetail({ job, verified }: { job: { id: string; title: string
         toast.error("Impossible de charger votre profil candidat. Réessayez.");
         return;
       }
+      if (!candidate?.resume_path) {
+        toast.error("Importez d'abord votre CV PDF dans votre espace candidat pour envoyer votre candidature.");
+        navigate({ to: "/candidate" });
+        return;
+      }
+      const { data: personal, error: personalError } = await supabase.from("profiles").select("full_name,email,phone").eq("id", auth.user.id).single();
+      if (personalError || !personal) {
+        toast.error("Impossible de charger vos coordonnées personnelles. Complétez votre profil puis réessayez.");
+        return;
+      }
       const { error } = await supabase.from("applications").insert({
         job_id: job.id,
         candidate_id: auth.user.id,
+        candidate_name: personal.full_name,
+        candidate_email: personal.email,
+        candidate_phone: personal.phone,
         cover_letter: cover.trim(),
-        cv_url: candidate?.resume_path ?? null,
+        cv_url: candidate.resume_path,
       });
       if (error) {
         toast.error(error.code === "23505" ? "Vous avez déjà postulé à cette offre." : "Impossible d'envoyer votre candidature.");
         return;
       }
+      await queryClient.invalidateQueries({ queryKey: ["candidate-activity", auth.user.id] });
       toast.success("Candidature envoyée. Vous pourrez suivre son statut dans votre espace candidat.");
       setApplyOpen(false); setCover("");
     } finally { setBusy(false); }

@@ -48,13 +48,6 @@ function RecruiterPage() {
     return () => { void supabase.removeChannel(channel); };
   }, [qc, user.id]);
 
-  useEffect(() => {
-    const pendingIds = data.applications.filter((application) => application.status === "pending").map((application) => application.id);
-    if (!pendingIds.length) return;
-    void supabase.from("applications").update({ status: "reviewed", updated_at: new Date().toISOString() }).in("id", pendingIds)
-      .then(({ error }) => { if (!error) void qc.invalidateQueries({ queryKey: ["recruiter-workspace", user.id] }); });
-  }, [data.applications, qc, user.id]);
-
   const signOut = async () => {
     await qc.cancelQueries(); qc.clear(); await supabase.auth.signOut();
     navigate({ to: "/login", replace: true });
