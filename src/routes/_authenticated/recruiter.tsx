@@ -170,7 +170,10 @@ function RecruiterPage() {
           <div><Link to="/jobs/$id" params={{ id: job.id }} className="font-semibold hover:underline">{job.title}</Link><p className="text-sm text-muted-foreground">{job.job_title} · {job.location}, {job.country} · {applicants} candidature{applicants === 1 ? "" : "s"}</p></div>
           <div className="flex items-center gap-2"><span className="rounded-md bg-muted px-3 py-1.5 text-xs font-medium">{published ? "Publiée" : "Clôturée"}</span>{published && <Button size="sm" variant="outline" onClick={() => closeJob(job.id)}><X />Clôturer</Button>}</div>
         </li>;
-      })}</ul> : <p className="mt-3 text-sm text-muted-foreground">Aucune offre publiée. Créez votre première annonce.</p>}
+      })}</ul> : <div className="mt-4 rounded-lg border bg-card p-6 text-center">
+        <p className="text-sm text-muted-foreground">Aucune offre publiée pour le moment.</p>
+        <Button asChild variant="accent" className="mt-4"><Link to="/post-job"><Plus />Publier une première offre</Link></Button>
+      </div>}
     </section>
 
     <section className="border-b py-8">

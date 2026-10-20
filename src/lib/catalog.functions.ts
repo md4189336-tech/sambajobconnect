@@ -38,15 +38,16 @@ export const getPublicCatalog = createServerFn({ method: "GET" }).handler(async 
       })),
     ),
   };
+  const emptyCatalog = () => ({
+    ...localCatalog,
+    jobs: [],
+    verifiedCompanyIds: [] as string[],
+    verifiedCompanyOwners: [] as string[],
+  });
 
   if (!url || !key) {
     console.error("[Catalogue Supabase] Variables SUPABASE_URL et clé publique manquantes.");
-    return {
-      ...localCatalog,
-      jobs: [],
-      verifiedCompanyIds: [] as string[],
-      verifiedCompanyOwners: [] as string[],
-    };
+    return emptyCatalog();
   }
 
   const client = createClient<Database>(url, key, {
@@ -63,7 +64,7 @@ export const getPublicCatalog = createServerFn({ method: "GET" }).handler(async 
     },
   });
 
-  const [sectorResult, titleResult, newJobResult, companyResult] = await Promise.all([
+  const results = await Promise.all([
     client.from("sectors").select("id,slug,name,description,icon,sort_order").order("sort_order"),
     client.from("job_titles").select("id,sector_slug,name,sort_order").order("sort_order"),
     client
@@ -72,7 +73,12 @@ export const getPublicCatalog = createServerFn({ method: "GET" }).handler(async 
       .eq("status", "published")
       .order("created_at", { ascending: false }),
     client.from("companies").select("id,owner_id,name,is_verified"),
-  ]);
+  ]).catch((error) => {
+    console.error("[Catalogue Supabase] Connexion temporairement indisponible :", error);
+    return null;
+  });
+  if (!results) return emptyCatalog();
+  const [sectorResult, titleResult, newJobResult, companyResult] = results;
 
   if (sectorResult.error) reportCatalogError("Lecture des secteurs (taxonomie locale utilisée)", sectorResult.error);
   if (titleResult.error) reportCatalogError("Lecture des métiers (taxonomie locale utilisée)", titleResult.error);
@@ -82,42 +88,46 @@ export const getPublicCatalog = createServerFn({ method: "GET" }).handler(async 
     jobs = newJobResult.data;
   } else {
     reportCatalogError("Lecture des offres récentes (essai de compatibilité historique)", newJobResult.error);
-    const legacy = await client
-      .from("jobs")
-      .select("id,title,description,sector,job_title,location,country,company_name,contract,created_at,status,salary_min,salary_max,experience,required_degree,remote,recruiter_id")
-      .eq("status", "published")
-      .order("created_at", { ascending: false });
-    if (legacy.error) {
-      reportCatalogError("Lecture des offres historiques (aucune offre affichée)", legacy.error);
-    } else {
-      jobs = legacy.data.map((job) => ({
-        id: job.id,
-        title: job.title,
-        description: job.description,
-        sector: job.sector,
-        sector_id: null,
-        job_title: job.job_title,
-        location: job.location,
-        city: job.location,
-        country: job.country,
-        company_name: job.company_name,
-        company_id: null,
-        contract: job.contract,
-        contract_type: job.contract,
-        created_at: job.created_at,
-        status: job.status,
-        salary_min: job.salary_min,
-        salary_max: job.salary_max,
-        salary_range: null,
-        experience: job.experience,
-        experience_level: job.experience,
-        required_degree: job.required_degree,
-        education_level: job.required_degree,
-        remote: job.remote,
-        is_remote: job.remote,
-        is_featured: false,
-        recruiter_id: job.recruiter_id,
-      }));
+    try {
+      const legacy = await client
+        .from("jobs")
+        .select("id,title,description,sector,location,company_name,created_at,recruiter_id")
+        .eq("status", "published")
+        .order("created_at", { ascending: false });
+      if (legacy.error) {
+        reportCatalogError("Lecture des offres historiques (aucune offre affichée)", legacy.error);
+      } else {
+        jobs = legacy.data.map((job) => ({
+          id: job.id,
+          title: job.title,
+          description: job.description,
+          sector: job.sector,
+          sector_id: null,
+          job_title: "",
+          location: job.location,
+          city: job.location,
+          country: "Sénégal",
+          company_name: job.company_name,
+          company_id: null,
+          contract: "CDI",
+          contract_type: "CDI",
+          created_at: job.created_at,
+          status: "published",
+          salary_min: null,
+          salary_max: null,
+          salary_range: null,
+          experience: "",
+          experience_level: "",
+          required_degree: "",
+          education_level: "",
+          remote: false,
+          is_remote: false,
+          is_featured: false,
+          recruiter_id: job.recruiter_id,
+        }));
+      }
+    } catch (error) {
+      console.error("[Catalogue Supabase] Lecture des offres historiques impossible :", error);
     }
   }
 
@@ -131,14 +141,18 @@ export const getPublicCatalog = createServerFn({ method: "GET" }).handler(async 
     for (const company of verifiedCompanies) verifiedCompanyNames.set(company.id, company.name);
   } else {
     reportCatalogError("Lecture des entreprises (essai de compatibilité historique)", companyResult.error);
-    const legacyCompanies = await client
-      .from("company_profiles")
-      .select("user_id")
-      .eq("verification_status", "verified");
-    if (legacyCompanies.error) {
-      reportCatalogError("Lecture des entreprises vérifiées", legacyCompanies.error);
-    } else {
-      verifiedCompanyOwners = legacyCompanies.data.map((company) => company.user_id);
+    try {
+      const legacyCompanies = await client
+        .from("company_profiles")
+        .select("user_id")
+        .eq("verification_status", "verified");
+      if (legacyCompanies.error) {
+        reportCatalogError("Lecture des entreprises vérifiées", legacyCompanies.error);
+      } else {
+        verifiedCompanyOwners = legacyCompanies.data.map((company) => company.user_id);
+      }
+    } catch (error) {
+      console.error("[Catalogue Supabase] Lecture des entreprises vérifiées impossible :", error);
     }
   }
 
